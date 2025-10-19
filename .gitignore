@@ -1,0 +1,38 @@
+# Moodle Transcript Plugin - Git Ignore
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
+.phpintel/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+*~
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+
+# Moodle specific
+moodledata/
+config.php
+
+# PHP
+vendor/
+composer.lock
+
+# Testing
+coverage/
+.phpunit.result.cache
+
+# Build
+dist/
+*.zip
+
+# Logs
+*.log
+error_log

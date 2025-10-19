@@ -1,0 +1,26 @@
+{
+  "name": "cor4edu/moodle-gradereport_transcript",
+  "description": "Academic transcript and CEU certificate generator for Moodle 5.1+",
+  "type": "moodle-gradereport",
+  "license": "GPL-3.0-or-later",
+  "version": "1.0.0",
+  "authors": [
+    {
+      "name": "COR4EDU",
+      "email": "support@cor4edu.com"
+    }
+  ],
+  "require": {
+    "php": ">=8.2.0",
+    "setasign/fpdi": "^2.5"
+  },
+  "autoload": {
+    "psr-4": {
+      "gradereport_transcript\\": "classes/"
+    }
+  },
+  "config": {
+    "vendor-dir": "vendor",
+    "optimize-autoloader": true
+  }
+}

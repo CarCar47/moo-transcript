@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="grade/report/transcript/db" VERSION="20251018" COMMENT="XMLDB file for Moodle gradereport_transcript"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../../lib/xmldb/xmldb.xsd"
+>
+  <TABLES>
+    <!-- Schools table -->
+    <TABLE NAME="gradereport_transcript_schools" COMMENT="Stores school/institution information">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="School name"/>
+        <FIELD NAME="address" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="School address"/>
+        <FIELD NAME="phone" TYPE="char" LENGTH="50" NOTNULL="false" SEQUENCE="false" COMMENT="School phone number"/>
+        <FIELD NAME="website" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="School website URL"/>
+        <FIELD NAME="logo" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="Path to school logo file"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+    </TABLE>
+
+    <!-- Programs table -->
+    <TABLE NAME="gradereport_transcript_programs" COMMENT="Stores program/course catalog information">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="schoolid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Reference to school"/>
+        <FIELD NAME="categoryid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Moodle category ID"/>
+        <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Program name"/>
+        <FIELD NAME="type" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="hourbased" SEQUENCE="false" COMMENT="Type: hourbased, creditbased, or ceu"/>
+        <FIELD NAME="pdftemplate" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="Path to PDF template file"/>
+        <FIELD NAME="gradescaleid" TYPE="int" LENGTH="10" NOTNULL="false" DEFAULT="0" SEQUENCE="false" COMMENT="Custom grade scale ID"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="schoolid" TYPE="foreign" FIELDS="schoolid" REFTABLE="gradereport_transcript_schools" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="categoryid" UNIQUE="false" FIELDS="categoryid"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- Course mappings table -->
+    <TABLE NAME="gradereport_transcript_courses" COMMENT="Maps Moodle courses to PDF form fields">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="programid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Reference to program"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Moodle course ID"/>
+        <FIELD NAME="sortorder" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Display order on transcript"/>
+        <FIELD NAME="pdffieldprefix" TYPE="char" LENGTH="100" NOTNULL="false" SEQUENCE="false" COMMENT="PDF form field prefix (e.g., PMU1, PMU2)"/>
+        <FIELD NAME="theoryhours" TYPE="number" LENGTH="10" NOTNULL="false" DEFAULT="0" SEQUENCE="false" DECIMALS="2" COMMENT="Theory hours for hour-based programs"/>
+        <FIELD NAME="labhours" TYPE="number" LENGTH="10" NOTNULL="false" DEFAULT="0" SEQUENCE="false" DECIMALS="2" COMMENT="Lab hours for hour-based programs"/>
+        <FIELD NAME="credits" TYPE="number" LENGTH="10" NOTNULL="false" DEFAULT="0" SEQUENCE="false" DECIMALS="2" COMMENT="Credits for credit-based programs"/>
+        <FIELD NAME="ceuvalue" TYPE="number" LENGTH="10" NOTNULL="false" DEFAULT="0" SEQUENCE="false" DECIMALS="2" COMMENT="CEU value"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="programid" TYPE="foreign" FIELDS="programid" REFTABLE="gradereport_transcript_programs" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="courseid" UNIQUE="false" FIELDS="courseid"/>
+        <INDEX NAME="programcourse" UNIQUE="true" FIELDS="programid, courseid"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- Transcript requests table -->
+    <TABLE NAME="gradereport_transcript_requests" COMMENT="Stores student transcript requests">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Student user ID"/>
+        <FIELD NAME="programid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Reference to program"/>
+        <FIELD NAME="requesttype" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="unofficial" SEQUENCE="false" COMMENT="Type: official or unofficial"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="pending" SEQUENCE="false" COMMENT="Status: pending, approved, rejected"/>
+        <FIELD NAME="deliverymethod" TYPE="char" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="Method: email, mail, pickup"/>
+        <FIELD NAME="recipientemail" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="Email address for delivery"/>
+        <FIELD NAME="recipientaddress" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Mailing address for physical delivery"/>
+        <FIELD NAME="notes" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Additional notes from student"/>
+        <FIELD NAME="approvedby" TYPE="int" LENGTH="10" NOTNULL="false" DEFAULT="0" SEQUENCE="false" COMMENT="User ID who approved/rejected"/>
+        <FIELD NAME="approvaldate" TYPE="int" LENGTH="10" NOTNULL="false" DEFAULT="0" SEQUENCE="false" COMMENT="Date of approval/rejection"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="programid" TYPE="foreign" FIELDS="programid" REFTABLE="gradereport_transcript_programs" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userid" UNIQUE="false" FIELDS="userid"/>
+        <INDEX NAME="status" UNIQUE="false" FIELDS="status"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- Verification codes table -->
+    <TABLE NAME="gradereport_transcript_verify" COMMENT="Stores verification codes for issued transcripts">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Student user ID"/>
+        <FIELD NAME="programid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Reference to program"/>
+        <FIELD NAME="verificationcode" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false" COMMENT="Unique verification code"/>
+        <FIELD NAME="documenttype" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="Type: transcript or ceu"/>
+        <FIELD NAME="issuedate" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Date transcript was issued"/>
+        <FIELD NAME="expirydate" TYPE="int" LENGTH="10" NOTNULL="false" DEFAULT="0" SEQUENCE="false" COMMENT="Optional expiry date"/>
+        <FIELD NAME="pdfhash" TYPE="char" LENGTH="64" NOTNULL="false" SEQUENCE="false" COMMENT="SHA256 hash of PDF file for integrity check"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="programid" TYPE="foreign" FIELDS="programid" REFTABLE="gradereport_transcript_programs" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userid" UNIQUE="false" FIELDS="userid"/>
+        <INDEX NAME="verificationcode" UNIQUE="true" FIELDS="verificationcode"/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>
