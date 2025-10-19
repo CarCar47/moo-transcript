@@ -120,3 +120,8 @@ $string['bestpractice2'] = 'Use consistent field naming: Add a prefix for each p
 $string['bestpractice3'] = 'Keep PDF templates simple: Fewer form fields = easier maintenance. Only add fields for data that changes per student.';
 $string['bestpractice4'] = 'Back up PDF templates: Save the original editable .pdf file with form fields before uploading.';
 $string['bestpractice5'] = 'Document your field mappings: Keep a spreadsheet of which Moodle courses map to which PDF fields.';
+
+// Admin menu items.
+$string['manageschools'] = 'Manage Schools';
+$string['manageprograms'] = 'Manage Programs';
+$string['managecourses'] = 'Map Courses to Programs';
