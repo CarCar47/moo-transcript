@@ -29,10 +29,14 @@ require_once($CFG->dirroot . '/grade/report/lib.php');
 /**
  * Add nodes to myprofile page.
  *
- * @param tree $tree Tree object
- * @param stdClass $user User object
- * @param bool $iscurrentuser Is the user viewing their own profile?
- * @param stdClass|null $course Course object
+ * This function adds a link to the Academic Transcripts report in the user's
+ * profile page. The link is shown based on user permissions and plugin settings.
+ *
+ * @param \core_user\output\myprofile\tree $tree Tree object for profile navigation
+ * @param stdClass $user User object whose profile is being viewed
+ * @param bool $iscurrentuser Whether the current user is viewing their own profile
+ * @param stdClass|null $course Course object (not used in this plugin)
+ * @return void
  */
 function gradereport_transcript_myprofile_navigation(tree $tree, stdClass $user, bool $iscurrentuser, ?stdClass $course) {
     global $USER;
@@ -72,15 +76,18 @@ function gradereport_transcript_myprofile_navigation(tree $tree, stdClass $user,
 }
 
 /**
- * Returns the grade report link for course context
+ * Returns the grade report link for course context.
  *
- * @param context_course $context Course context
- * @param int $courseid Course ID
+ * This function adds a "View Transcript" link in the grade reports interface
+ * when viewing a user's grades. The link is shown based on permissions and settings.
+ *
+ * @param \context_course $context Course context object
+ * @param int $courseid Moodle course ID
  * @param array $element An array representing an element in the grade_tree
- * @param grade_plugin_return $gpr A grade_plugin_return object
- * @param string $mode Mode
- * @param stdClass|null $templatecontext Template context
- * @return stdClass|null
+ * @param \grade_plugin_return $gpr A grade_plugin_return object for navigation
+ * @param string $mode Display mode ('user' or other)
+ * @param stdClass|null $templatecontext Template context object for rendering
+ * @return stdClass|null Returns link template context or null if link should not be shown
  */
 function gradereport_transcript_get_report_link(context_course $context, int $courseid,
         array $element, grade_plugin_return $gpr, string $mode, ?stdClass $templatecontext): ?stdClass {

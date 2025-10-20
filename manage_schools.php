@@ -216,7 +216,8 @@ if (empty($schools)) {
 
         // Format website as clickable link if provided.
         $website = !empty($school->website)
-            ? html_writer::link($school->website, $school->website, ['target' => '_blank'])
+            ? html_writer::link(s($school->website), s($school->website),
+                ['target' => '_blank', 'rel' => 'noopener noreferrer'])
             : '';
 
         $table->data[] = [
