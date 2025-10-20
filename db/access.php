@@ -27,6 +27,8 @@ defined('MOODLE_INTERNAL') || die();
 $capabilities = [
 
     // View own transcript (students).
+    // NOTE: Set to CONTEXT_COURSE so students with course enrollments can access.
+    // Follows Moodle overview report pattern - permission checked per-course.
     'gradereport/transcript:view' => [
         'riskbitmask' => RISK_PERSONAL,
         'captype' => 'read',
@@ -40,6 +42,7 @@ $capabilities = [
     ],
 
     // View all student transcripts (teachers/admins).
+    // NOTE: Set to CONTEXT_COURSE for consistency with view capability.
     'gradereport/transcript:viewall' => [
         'riskbitmask' => RISK_PERSONAL,
         'captype' => 'read',
@@ -52,6 +55,7 @@ $capabilities = [
     ],
 
     // Manage transcript settings (admins only).
+    // NOTE: Kept at CONTEXT_SYSTEM - admin functions require system-level access.
     'gradereport/transcript:manage' => [
         'riskbitmask' => RISK_CONFIG,
         'captype' => 'write',
@@ -62,12 +66,25 @@ $capabilities = [
     ],
 
     // Request official transcript (students).
+    // NOTE: Set to CONTEXT_COURSE for consistency with view capability.
     'gradereport/transcript:request' => [
         'riskbitmask' => RISK_PERSONAL,
         'captype' => 'write',
         'contextlevel' => CONTEXT_COURSE,
         'archetypes' => [
             'student' => CAP_ALLOW,
+        ],
+    ],
+
+    // Download official transcript with verification code (teachers/admins only).
+    // NOTE: Set to CONTEXT_COURSE for consistency.
+    'gradereport/transcript:download' => [
+        'riskbitmask' => RISK_PERSONAL,
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_COURSE,
+        'archetypes' => [
+            'editingteacher' => CAP_ALLOW,
+            'manager' => CAP_ALLOW,
         ],
     ],
 ];

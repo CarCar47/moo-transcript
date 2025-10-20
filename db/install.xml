@@ -68,6 +68,23 @@
       </INDEXES>
     </TABLE>
 
+    <!-- Pricing configuration table -->
+    <TABLE NAME="gradereport_transcript_pricing" COMMENT="Stores pricing configuration per school">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="schoolid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Reference to school"/>
+        <FIELD NAME="firstfree" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="First official transcript free (1=yes, 0=no)"/>
+        <FIELD NAME="officialprice" TYPE="number" LENGTH="10" NOTNULL="false" DEFAULT="0.00" SEQUENCE="false" DECIMALS="2" COMMENT="Price for official transcripts"/>
+        <FIELD NAME="unofficialprice" TYPE="number" LENGTH="10" NOTNULL="false" DEFAULT="0.00" SEQUENCE="false" DECIMALS="2" COMMENT="Price for unofficial transcripts"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="schoolid" TYPE="foreign" FIELDS="schoolid" REFTABLE="gradereport_transcript_schools" REFFIELDS="id"/>
+      </KEYS>
+    </TABLE>
+
     <!-- Transcript requests table -->
     <TABLE NAME="gradereport_transcript_requests" COMMENT="Stores student transcript requests">
       <FIELDS>
@@ -79,7 +96,21 @@
         <FIELD NAME="deliverymethod" TYPE="char" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="Method: email, mail, pickup"/>
         <FIELD NAME="recipientemail" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="Email address for delivery"/>
         <FIELD NAME="recipientaddress" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Mailing address for physical delivery"/>
+        <FIELD NAME="recipientname" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="Institution/company name for official transcripts"/>
+        <FIELD NAME="recipientphone" TYPE="char" LENGTH="50" NOTNULL="false" SEQUENCE="false" COMMENT="Recipient phone number"/>
         <FIELD NAME="notes" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Additional notes from student"/>
+        <FIELD NAME="price" TYPE="number" LENGTH="10" NOTNULL="false" DEFAULT="0.00" SEQUENCE="false" DECIMALS="2" COMMENT="Calculated price for this request"/>
+        <FIELD NAME="paymentstatus" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="pending" SEQUENCE="false" COMMENT="Payment status: pending, paid, free"/>
+        <FIELD NAME="paymentmethod" TYPE="char" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="Payment method: cash, invoice"/>
+        <FIELD NAME="invoicenumber" TYPE="char" LENGTH="50" NOTNULL="false" SEQUENCE="false" COMMENT="Invoice number for tracking"/>
+        <FIELD NAME="invoicedate" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Date invoice was generated"/>
+        <FIELD NAME="paiddate" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Date payment was received"/>
+        <FIELD NAME="deliverystatus" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="pending" SEQUENCE="false" COMMENT="Delivery status: pending/sent/delivered/pickedup"/>
+        <FIELD NAME="deliverydate" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Date transcript was delivered"/>
+        <FIELD NAME="deliverynotes" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Delivery tracking notes"/>
+        <FIELD NAME="trackingnumber" TYPE="char" LENGTH="100" NOTNULL="false" SEQUENCE="false" COMMENT="Postal tracking number"/>
+        <FIELD NAME="receiptnumber" TYPE="char" LENGTH="100" NOTNULL="false" SEQUENCE="false" COMMENT="Payment receipt number"/>
+        <FIELD NAME="paymentnotes" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Additional payment information"/>
         <FIELD NAME="approvedby" TYPE="int" LENGTH="10" NOTNULL="false" DEFAULT="0" SEQUENCE="false" COMMENT="User ID who approved/rejected"/>
         <FIELD NAME="approvaldate" TYPE="int" LENGTH="10" NOTNULL="false" DEFAULT="0" SEQUENCE="false" COMMENT="Date of approval/rejection"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>

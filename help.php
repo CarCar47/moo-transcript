@@ -166,7 +166,8 @@ echo html_writer::start_tag('tbody');
 $summaryfields = [
     ['total_theory_hours', 'Number', 'Sum of all theory hours', '240'],
     ['total_lab_hours', 'Number', 'Sum of all lab hours', '480'],
-    ['total_hours', 'Number', 'Grand total of all hours', '720'],
+    ['total_clinical_hours', 'Number', 'Sum of all clinical hours', '120'],
+    ['total_hours', 'Number', 'Grand total of all hours', '840'],
     ['total_credits', 'Number', 'Total credits earned', '60.0'],
     ['gpa', 'Number', 'Grade Point Average', '3.75'],
     ['issue_date', 'Date', 'Date transcript was generated', '10/18/2025'],

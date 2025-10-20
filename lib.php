@@ -35,18 +35,40 @@ require_once($CFG->dirroot . '/grade/report/lib.php');
  * @param stdClass|null $course Course object
  */
 function gradereport_transcript_myprofile_navigation(tree $tree, stdClass $user, bool $iscurrentuser, ?stdClass $course) {
-    if (empty($course)) {
-        // We want to display these reports under the site context.
-        $course = get_fast_modinfo(SITEID)->get_course();
-    }
+    global $USER;
 
-    $context = context_course::instance($course->id);
-    if (has_capability('gradereport/transcript:view', $context, $user->id)) {
-        $url = new moodle_url('/grade/report/transcript/index.php', ['id' => $course->id, 'userid' => $user->id]);
+    // Determine if viewing own profile
+    $viewingown = ($user->id == $USER->id);
+
+    // Check if user is admin/manager
+    $isadmin = is_siteadmin();
+    $systemcontext = context_system::instance();
+    $ismanager = has_capability('gradereport/transcript:manage', $systemcontext);
+
+    if ($viewingown) {
+        // Student viewing own profile - check if student access is enabled
+        if (!$isadmin && !$ismanager) {
+            $enablestudents = get_config('gradereport_transcript', 'enablestudents');
+            if ($enablestudents === false) {
+                $enablestudents = 1;  // Default to enabled if not set
+            }
+            if (!$enablestudents) {
+                return;  // Don't add node - student access disabled in settings
+            }
+        }
+        // Add node for own profile (student access enabled OR user is admin/manager)
+        $url = new moodle_url('/grade/report/transcript/index.php', ['id' => SITEID, 'userid' => $user->id]);
+        $node = new core_user\output\myprofile\node('reports', 'transcript',
+                get_string('pluginname', 'gradereport_transcript'), null, $url);
+        $tree->add_node($node);
+    } else if ($isadmin || $ismanager) {
+        // Admin/manager viewing another user's profile - always show
+        $url = new moodle_url('/grade/report/transcript/index.php', ['id' => SITEID, 'userid' => $user->id]);
         $node = new core_user\output\myprofile\node('reports', 'transcript',
                 get_string('pluginname', 'gradereport_transcript'), null, $url);
         $tree->add_node($node);
     }
+    // Otherwise, don't add node (regular user viewing another user's profile)
 }
 
 /**
@@ -69,19 +91,50 @@ function gradereport_transcript_get_report_link(context_course $context, int $co
         }
 
         $userid = $element['userid'];
-        if (!has_capability('gradereport/transcript:view', $context, $userid)) {
-            return null;
+        global $USER;
+
+        // Determine if viewing own grades
+        $viewingown = ($userid == $USER->id);
+
+        // Check if user is admin/manager
+        $isadmin = is_siteadmin();
+        $systemcontext = context_system::instance();
+        $ismanager = has_capability('gradereport/transcript:manage', $systemcontext);
+
+        if ($viewingown) {
+            // Student viewing own grades - check if student access is enabled
+            if (!$isadmin && !$ismanager) {
+                $enablestudents = get_config('gradereport_transcript', 'enablestudents');
+                if ($enablestudents === false) {
+                    $enablestudents = 1;  // Default to enabled if not set
+                }
+                if (!$enablestudents) {
+                    return null;  // Don't show link - student access disabled in settings
+                }
+            }
+            // Show link for own grades (student access enabled OR user is admin/manager)
+            $url = new moodle_url('/grade/report/transcript/index.php', ['id' => SITEID, 'userid' => $userid]);
+
+            if (!isset($templatecontext)) {
+                $templatecontext = new stdClass();
+            }
+            $templatecontext->url = $url;
+            $templatecontext->text = get_string('viewtranscript', 'gradereport_transcript');
+
+            return $templatecontext;
+        } else if ($isadmin || $ismanager) {
+            // Admin/manager viewing another user's grades - always show
+            $url = new moodle_url('/grade/report/transcript/index.php', ['id' => SITEID, 'userid' => $userid]);
+
+            if (!isset($templatecontext)) {
+                $templatecontext = new stdClass();
+            }
+            $templatecontext->url = $url;
+            $templatecontext->text = get_string('viewtranscript', 'gradereport_transcript');
+
+            return $templatecontext;
         }
-
-        $url = new moodle_url('/grade/report/transcript/index.php', ['id' => $courseid, 'userid' => $userid]);
-
-        if (!isset($templatecontext)) {
-            $templatecontext = new stdClass();
-        }
-        $templatecontext->url = $url;
-        $templatecontext->text = get_string('viewtranscript', 'gradereport_transcript');
-
-        return $templatecontext;
+        // Otherwise, don't show link (regular user viewing another user's grades)
     }
 
     return null;
