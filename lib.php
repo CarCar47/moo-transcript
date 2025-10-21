@@ -42,7 +42,7 @@ function gradereport_transcript_myprofile_navigation(tree $tree, stdClass $user,
     global $USER;
 
     // Determine if viewing own profile
-    $viewingown = ($user->id == $USER->id);
+    $viewingown = ($user->id === $USER->id);
 
     // Check if user is admin/manager
     $isadmin = is_siteadmin();
@@ -101,7 +101,7 @@ function gradereport_transcript_get_report_link(context_course $context, int $co
         global $USER;
 
         // Determine if viewing own grades
-        $viewingown = ($userid == $USER->id);
+        $viewingown = ($userid === $USER->id);
 
         // Check if user is admin/manager
         $isadmin = is_siteadmin();

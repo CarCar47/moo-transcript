@@ -53,7 +53,7 @@ class pricing_form extends \moodleform {
         // School name (display only).
         if ($schoolid > 0) {
             $school = $DB->get_record('gradereport_transcript_schools', ['id' => $schoolid], '*', MUST_EXIST);
-            $mform->addElement('static', 'schoolname', get_string('school', 'gradereport_transcript'), $school->name);
+            $mform->addElement('static', 'schoolname', get_string('school', 'gradereport_transcript'), format_string($school->name));
         }
 
         // First official transcript free checkbox.
@@ -106,7 +106,7 @@ class pricing_form extends \moodleform {
      * @param array $files Form files
      * @return array Errors array
      */
-    public function validation($data, $files) {
+    public function validation($data, $files): array {
         $errors = parent::validation($data, $files);
 
         // Validate schoolid is provided.

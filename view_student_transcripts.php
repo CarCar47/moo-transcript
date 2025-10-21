@@ -26,6 +26,8 @@ require_once('../../../config.php');
 require_once($CFG->libdir . '/adminlib.php');
 require_once($CFG->dirroot . '/user/lib.php');
 
+defined('MOODLE_INTERNAL') || die();
+
 admin_externalpage_setup('gradereporttranscriptviewstudents');
 
 // Get optional user ID parameter.

@@ -28,6 +28,9 @@ require_once('../../../config.php');
 require_once($CFG->libdir . '/gradelib.php');
 require_once($CFG->dirroot . '/grade/lib.php');
 require_once($CFG->dirroot . '/grade/report/transcript/lib.php');
+require_once($CFG->dirroot . '/grade/report/transcript/classes/helper.php');
+
+defined('MOODLE_INTERNAL') || die();
 
 // Course ID is optional, defaults to SITEID (for profile/system context access)
 $courseid = optional_param('id', SITEID, PARAM_INT);
@@ -95,8 +98,8 @@ if ($viewingother) {
 echo html_writer::start_div('transcript-student-info alert alert-info');
 echo html_writer::tag('h4', get_string('studentinformation', 'gradereport_transcript'));
 echo html_writer::tag('p', html_writer::tag('strong', get_string('studentname', 'gradereport_transcript') . ': ') . fullname($user));
-echo html_writer::tag('p', html_writer::tag('strong', get_string('studentid', 'gradereport_transcript') . ': ') . $user->id);
-echo html_writer::tag('p', html_writer::tag('strong', get_string('studentemail', 'gradereport_transcript') . ': ') . $user->email);
+echo html_writer::tag('p', html_writer::tag('strong', get_string('studentid', 'gradereport_transcript') . ': ') . s($user->id));
+echo html_writer::tag('p', html_writer::tag('strong', get_string('studentemail', 'gradereport_transcript') . ': ') . s($user->email));
 echo html_writer::end_div();
 
 // Auto-detect programs student is enrolled in.
@@ -120,17 +123,6 @@ if (!empty($enrolledcourses)) {
           ORDER BY p.name ASC";
 
     $programs = $DB->get_records_sql($sql, $params);
-}
-
-/**
- * Get pricing configuration for a school
- *
- * @param int $schoolid School ID
- * @return object|false Pricing record or false
- */
-function gradereport_transcript_get_pricing($schoolid) {
-    global $DB;
-    return $DB->get_record('gradereport_transcript_pricing', ['schoolid' => $schoolid]);
 }
 
 // Display programs.
@@ -168,10 +160,10 @@ if (empty($programs)) {
         echo html_writer::start_tag('tr');
 
         // Program name.
-        echo html_writer::tag('td', $program->name);
+        echo html_writer::tag('td', format_string($program->name));
 
         // School name.
-        echo html_writer::tag('td', $program->schoolname);
+        echo html_writer::tag('td', format_string($program->schoolname));
 
         // Program type.
         $typename = '';
@@ -192,7 +184,7 @@ if (empty($programs)) {
         echo html_writer::start_tag('td', ['class' => 'text-center']);
 
         // Get pricing for this program's school.
-        $pricing = gradereport_transcript_get_pricing($program->schoolid);
+        $pricing = \gradereport_transcript\helper::get_pricing($program->schoolid);
 
         // Button 1: View Transcript (always available).
         $viewurl = new moodle_url('/grade/report/transcript/generate_transcript.php', [

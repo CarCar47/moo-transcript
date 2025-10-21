@@ -103,7 +103,7 @@ class provider implements
     public static function get_users_in_context(userlist $userlist) {
         $context = $userlist->get_context();
 
-        if ($context->contextlevel != CONTEXT_SYSTEM) {
+        if ($context->contextlevel !== CONTEXT_SYSTEM) {
             return;
         }
 
@@ -128,7 +128,7 @@ class provider implements
         $user = $contextlist->get_user();
 
         foreach ($contextlist->get_contexts() as $context) {
-            if ($context->contextlevel != CONTEXT_SYSTEM) {
+            if ($context->contextlevel !== CONTEXT_SYSTEM) {
                 continue;
             }
 
@@ -154,7 +154,7 @@ class provider implements
     public static function delete_data_for_all_users_in_context(\context $context) {
         global $DB;
 
-        if ($context->contextlevel != CONTEXT_SYSTEM) {
+        if ($context->contextlevel !== CONTEXT_SYSTEM) {
             return;
         }
 
@@ -177,7 +177,7 @@ class provider implements
         $user = $contextlist->get_user();
 
         foreach ($contextlist->get_contexts() as $context) {
-            if ($context->contextlevel != CONTEXT_SYSTEM) {
+            if ($context->contextlevel !== CONTEXT_SYSTEM) {
                 continue;
             }
 
@@ -196,7 +196,7 @@ class provider implements
 
         $context = $userlist->get_context();
 
-        if ($context->contextlevel != CONTEXT_SYSTEM) {
+        if ($context->contextlevel !== CONTEXT_SYSTEM) {
             return;
         }
 

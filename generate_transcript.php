@@ -25,6 +25,8 @@
 require_once('../../../config.php');
 require_once($CFG->dirroot . '/grade/report/transcript/classes/transcript_generator.php');
 
+defined('MOODLE_INTERNAL') || die();
+
 require_login();
 
 $programid = required_param('programid', PARAM_INT);
@@ -116,14 +118,14 @@ echo $OUTPUT->heading(get_string('generatetranscript', 'gradereport_transcript')
 echo html_writer::start_div('transcript-student-info alert alert-info');
 echo html_writer::tag('h4', get_string('studentinformation', 'gradereport_transcript'));
 echo html_writer::tag('p', html_writer::tag('strong', get_string('studentname', 'gradereport_transcript') . ': ') . fullname($user));
-echo html_writer::tag('p', html_writer::tag('strong', get_string('studentid', 'gradereport_transcript') . ': ') . $user->id);
-echo html_writer::tag('p', html_writer::tag('strong', get_string('studentemail', 'gradereport_transcript') . ': ') . $user->email);
+echo html_writer::tag('p', html_writer::tag('strong', get_string('studentid', 'gradereport_transcript') . ': ') . s($user->id));
+echo html_writer::tag('p', html_writer::tag('strong', get_string('studentemail', 'gradereport_transcript') . ': ') . s($user->email));
 echo html_writer::end_div();
 
 // Show program information.
 echo html_writer::start_div('transcript-program-info alert alert-secondary');
 echo html_writer::tag('h4', get_string('programinformation', 'gradereport_transcript'));
-echo html_writer::tag('p', html_writer::tag('strong', get_string('programname', 'gradereport_transcript') . ': ') . $program->name);
+echo html_writer::tag('p', html_writer::tag('strong', get_string('programname', 'gradereport_transcript') . ': ') . format_string($program->name));
 
 $programtype = '';
 switch ($program->type) {
@@ -174,13 +176,13 @@ try {
                     ['id' => $programid], 'hour1label, hour2label, hour3label');
 
                 if (!empty(trim($programfull->hour1label))) {
-                    echo html_writer::tag('th', $programfull->hour1label, ['class' => 'text-center']);
+                    echo html_writer::tag('th', format_string($programfull->hour1label), ['class' => 'text-center']);
                 }
                 if (!empty(trim($programfull->hour2label))) {
-                    echo html_writer::tag('th', $programfull->hour2label, ['class' => 'text-center']);
+                    echo html_writer::tag('th', format_string($programfull->hour2label), ['class' => 'text-center']);
                 }
                 if (!empty(trim($programfull->hour3label))) {
-                    echo html_writer::tag('th', $programfull->hour3label, ['class' => 'text-center']);
+                    echo html_writer::tag('th', format_string($programfull->hour3label), ['class' => 'text-center']);
                 }
             } else {
                 // Default labels.

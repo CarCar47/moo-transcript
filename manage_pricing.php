@@ -26,6 +26,8 @@ require_once('../../../config.php');
 require_once($CFG->libdir . '/adminlib.php');
 require_once(__DIR__ . '/classes/forms/pricing_form.php');
 
+defined('MOODLE_INTERNAL') || die();
+
 // Require login and capability.
 require_login();
 require_capability('gradereport/transcript:manage', context_system::instance());
@@ -152,7 +154,7 @@ foreach ($schools as $school) {
     $row = [];
 
     // School name.
-    $row[] = $school->name;
+    $row[] = format_string($school->name);
 
     if ($pricing) {
         // First free.

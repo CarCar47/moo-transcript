@@ -24,8 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2025102100;               // The current plugin version (Date: YYYYMMDDXX).
+$plugin->version   = 2025102101;               // The current plugin version (Date: YYYYMMDDXX).
 $plugin->requires  = 2025092600;               // Requires Moodle 5.1.
 $plugin->component = 'gradereport_transcript'; // Full name of the plugin (used for diagnostics).
 $plugin->maturity  = MATURITY_STABLE;          // Production-ready stable release.
-$plugin->release   = '1.0.0';                  // First stable production release - All 7 phases complete.
+$plugin->release   = '1.0.1';                  // Moodle 2025 best practices: 66 fixes (2 CRITICAL + 37 XSS + 14 security + 13 code quality).

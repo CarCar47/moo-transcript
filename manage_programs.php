@@ -26,6 +26,8 @@ require_once('../../../config.php');
 require_once($CFG->libdir . '/adminlib.php');
 require_once($CFG->libdir . '/tablelib.php');
 
+defined('MOODLE_INTERNAL') || die();
+
 admin_externalpage_setup('gradereporttranscriptprograms');
 
 $action = optional_param('action', '', PARAM_ALPHA);
@@ -75,7 +77,7 @@ if ($action === 'delete' && $programid) {
             'id, schoolid, categoryid, name, type, pdftemplate, gradescaleid, timecreated, timemodified', MUST_EXIST);
 
         echo $OUTPUT->confirm(
-            get_string('deleteprogramconfirm', 'gradereport_transcript', $program->name),
+            get_string('deleteprogramconfirm', 'gradereport_transcript', format_string($program->name)),
             new moodle_url('/grade/report/transcript/manage_programs.php', [
                 'action' => 'delete',
                 'id' => $programid,

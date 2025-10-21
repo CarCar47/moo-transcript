@@ -171,7 +171,7 @@ class request_details_form extends \moodleform {
      * @param array $files Form files
      * @return array Errors array
      */
-    public function validation($data, $files) {
+    public function validation($data, $files): array {
         $errors = parent::validation($data, $files);
 
         // Validate payment details if status is paid.

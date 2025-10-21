@@ -27,6 +27,8 @@ require_once($CFG->libdir . '/adminlib.php');
 
 admin_externalpage_setup('gradereporttranscripthelp');
 
+defined('MOODLE_INTERNAL') || die();
+
 $PAGE->set_url(new moodle_url('/grade/report/transcript/help.php'));
 $PAGE->set_title(get_string('help', 'gradereport_transcript'));
 $PAGE->set_heading(get_string('help', 'gradereport_transcript'));
@@ -55,9 +57,7 @@ echo html_writer::end_tag('div');
 
 // PDF Template Creation Guide section.
 echo html_writer::start_tag('div', ['class' => 'transcript-help-section']);
-echo $OUTPUT->heading(get_string('pdftemplatecreat
-
-ion', 'gradereport_transcript'), 3);
+echo $OUTPUT->heading(get_string('pdftemplatecreation', 'gradereport_transcript'), 3);
 echo html_writer::tag('p', get_string('pdftemplateintro', 'gradereport_transcript'));
 
 echo $OUTPUT->heading(get_string('adobeacrobatsetup', 'gradereport_transcript'), 4);

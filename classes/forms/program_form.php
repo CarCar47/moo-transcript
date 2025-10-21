@@ -162,7 +162,7 @@ class program_form extends \moodleform {
 
         // Validate program type is valid.
         $validtypes = ['hourbased', 'creditbased', 'ceu'];
-        if (!in_array($data['type'], $validtypes)) {
+        if (!in_array($data['type'], $validtypes, true)) {
             $errors['type'] = get_string('error:invalidprogramtype', 'gradereport_transcript');
         }
 

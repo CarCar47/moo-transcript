@@ -27,6 +27,8 @@ require_once($CFG->libdir . '/adminlib.php');
 require_once($CFG->libdir . '/tablelib.php');
 require_once($CFG->libdir . '/ddllib.php');
 
+defined('MOODLE_INTERNAL') || die();
+
 admin_externalpage_setup('gradereporttranscriptcourses');
 
 $programid = optional_param('programid', 0, PARAM_INT);
@@ -101,6 +103,8 @@ echo $OUTPUT->heading(get_string('managecourses', 'gradereport_transcript'));
 
 // Program selection form.
 $programs = $DB->get_records_menu('gradereport_transcript_programs', null, 'name ASC', 'id, name');
+// Apply format_string to all program names for XSS protection
+$programs = array_map('format_string', $programs);
 
 if (empty($programs)) {
     echo $OUTPUT->notification(get_string('noprogramsavailable', 'gradereport_transcript'),
@@ -145,7 +149,7 @@ if ($programid) {
         $program->hour3label = 'Clinical Hours';
     }
 
-    echo $OUTPUT->heading(get_string('mappingcoursesfor', 'gradereport_transcript', $program->name), 3);
+    echo $OUTPUT->heading(get_string('mappingcoursesfor', 'gradereport_transcript', format_string($program->name)), 3);
     echo html_writer::tag('p', get_string('coursemappinginstructions', 'gradereport_transcript'));
 
     // Get all courses from program's category (sorted by course code).

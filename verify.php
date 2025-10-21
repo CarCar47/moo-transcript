@@ -29,6 +29,8 @@
 // Path: /grade/report/transcript/verify.php -> /config.php (3 levels up).
 require_once('../../../config.php');
 
+defined('MOODLE_INTERNAL') || die();
+
 // NO require_login() - this is a PUBLIC page accessible without authentication.
 
 // Get verification code from URL parameter or form submission.
@@ -61,7 +63,7 @@ echo html_writer::empty_tag('input', [
     'type' => 'text',
     'name' => 'code',
     'id' => 'code',
-    'value' => $code,
+    'value' => s($code),
     'placeholder' => 'TXN-XXXXXXXXXXXX',
     'class' => 'form-control',
     'required' => 'required',
@@ -113,7 +115,7 @@ if (!empty($code)) {
         if ($school) {
             echo html_writer::start_tag('tr');
             echo html_writer::tag('th', get_string('schoolname', 'gradereport_transcript'), ['scope' => 'row']);
-            echo html_writer::tag('td', $school->name);
+            echo html_writer::tag('td', format_string($school->name));
             echo html_writer::end_tag('tr');
         }
 
@@ -121,7 +123,7 @@ if (!empty($code)) {
         if ($program) {
             echo html_writer::start_tag('tr');
             echo html_writer::tag('th', get_string('programname', 'gradereport_transcript'), ['scope' => 'row']);
-            echo html_writer::tag('td', $program->name);
+            echo html_writer::tag('td', format_string($program->name));
             echo html_writer::end_tag('tr');
         }
 
@@ -143,14 +145,14 @@ if (!empty($code)) {
         // Verification code.
         echo html_writer::start_tag('tr');
         echo html_writer::tag('th', get_string('verifycode', 'gradereport_transcript'), ['scope' => 'row']);
-        echo html_writer::tag('td', html_writer::tag('code', $record->verificationcode));
+        echo html_writer::tag('td', html_writer::tag('code', s($record->verificationcode)));
         echo html_writer::end_tag('tr');
 
         // PDF hash (for integrity verification).
         if (!empty($record->pdfhash)) {
             echo html_writer::start_tag('tr');
             echo html_writer::tag('th', 'PDF Hash (SHA256)', ['scope' => 'row']);
-            echo html_writer::tag('td', html_writer::tag('small', html_writer::tag('code', $record->pdfhash)));
+            echo html_writer::tag('td', html_writer::tag('small', html_writer::tag('code', s($record->pdfhash))));
             echo html_writer::end_tag('tr');
         }
 
