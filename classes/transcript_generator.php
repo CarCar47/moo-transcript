@@ -182,6 +182,7 @@ class gradereport_transcript_generator {
         global $DB, $CFG;
 
         require_once($CFG->libdir . '/gradelib.php');
+        require_once($CFG->dirroot . '/grade/querylib.php'); // For grade_get_gradable_activities().
 
         if (!isset($this->grades)) {
             $mappings = $this->get_course_mappings();
@@ -194,50 +195,60 @@ class gradereport_transcript_generator {
                     continue; // Skip if course doesn't exist.
                 }
 
-                // Check if grade needs recalculation before fetching.
-                $gradeitem = grade_item::fetch([
-                    'courseid' => $course->id,
-                    'itemtype' => 'course'
-                ]);
-
-                if ($gradeitem && $gradeitem->needsupdate) {
-                    // Force recalculation to ensure fresh, accurate grades.
-                    // This is critical for transcripts to show current grades.
-                    grade_regrade_final_grades($course->id);
-                }
-
                 $gradevalue = null;
                 $gradeletter = null;
                 $gradepercentage = null;
 
-                // Use Moodle's official API to get course grade.
-                // This handles all gradebook logic: overrides, hidden grades, aggregation, etc.
-                $coursegrade = grade_get_course_grade($this->userid, $course->id);
+                // Check if course has gradeable activities BEFORE fetching grade.
+                // This prevents empty courses from incorrectly aggregating to 100% ("A").
+                // Per Moodle best practices: only show grades for courses with actual gradeable content.
+                $gradable_activities = grade_get_gradable_activities($course->id);
 
-                if ($coursegrade && isset($coursegrade->grade) && $coursegrade->grade !== null) {
-                    $gradevalue = $coursegrade->grade;
+                if (!empty($gradable_activities)) {
+                    // Course has gradeable content - proceed with grade fetching.
 
-                    // Re-fetch grade item for letter formatting (after potential recalculation).
+                    // Check if grade needs recalculation before fetching.
                     $gradeitem = grade_item::fetch([
                         'courseid' => $course->id,
                         'itemtype' => 'course'
                     ]);
 
-                    if ($gradeitem) {
-                        // Get letter grade using Moodle's grade formatter.
-                        $gradeletter = grade_format_gradevalue(
-                            $gradevalue,
-                            $gradeitem,
-                            true,
-                            GRADE_DISPLAY_TYPE_LETTER
-                        );
+                    if ($gradeitem && $gradeitem->needsupdate) {
+                        // Force recalculation to ensure fresh, accurate grades.
+                        // This is critical for transcripts to show current grades.
+                        grade_regrade_final_grades($course->id);
+                    }
 
-                        // Calculate percentage.
-                        if ($gradeitem->grademax > 0) {
-                            $gradepercentage = ($gradevalue / $gradeitem->grademax) * 100;
+                    // Use Moodle's official API to get course grade.
+                    // This handles all gradebook logic: overrides, hidden grades, aggregation, etc.
+                    $coursegrade = grade_get_course_grade($this->userid, $course->id);
+
+                    if ($coursegrade && isset($coursegrade->grade) && $coursegrade->grade !== null) {
+                        $gradevalue = $coursegrade->grade;
+
+                        // Re-fetch grade item for letter formatting (after potential recalculation).
+                        $gradeitem = grade_item::fetch([
+                            'courseid' => $course->id,
+                            'itemtype' => 'course'
+                        ]);
+
+                        if ($gradeitem) {
+                            // Get letter grade using Moodle's grade formatter.
+                            $gradeletter = grade_format_gradevalue(
+                                $gradevalue,
+                                $gradeitem,
+                                true,
+                                GRADE_DISPLAY_TYPE_LETTER
+                            );
+
+                            // Calculate percentage.
+                            if ($gradeitem->grademax > 0) {
+                                $gradepercentage = ($gradevalue / $gradeitem->grademax) * 100;
+                            }
                         }
                     }
                 }
+                // If no gradeable activities, leave gradevalue/gradeletter/gradepercentage as NULL (displays as "N/A").
 
                 $coursedata[] = (object)[
                     'mapping' => $mapping,
