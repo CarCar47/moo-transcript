@@ -418,8 +418,11 @@ class gradereport_transcript_generator {
             $currenty = $pdf->GetY();
 
             // Add logo with absolute positioning to avoid affecting text flow.
+            // Uses fitbox='LT' to constrain logo within 40mm width × 20mm height box.
+            // This prevents tall logos from overlapping with "Beaut Academy" heading.
+            // fitbox='LT' = Left-Top alignment, maintains aspect ratio (no distortion).
             // Parameters: file, x, y, w, h, type, link, align, resize, dpi, palign, ismask, imgmask, border, fitbox, hidden, fitonpage
-            $pdf->Image($logopath, 15, 15, 40, 0, '', '', '', false, 300, '', false, false, 0, false, false, false);
+            $pdf->Image($logopath, 15, 15, 40, 20, '', '', '', false, 300, '', false, false, 0, 'LT', false, false);
 
             // Reset Y position to continue with centered school name.
             // This ensures the school name remains centered and not affected by logo.
@@ -939,10 +942,11 @@ class gradereport_transcript_generator {
         $logopath = $this->get_school_logo_path();
         if ($logopath !== null) {
             // Position: X=15mm (left margin), Y=249mm (same as QR code vertical position)
-            // Size: 25mm width (matches QR code size), auto height
+            // Size: 25mm width × 25mm height maximum (matches QR code size)
+            // Uses fitbox='LT' to maintain aspect ratio within constraint box
             // A4 page: 210mm x 297mm, margins: 15mm
             // QR code is at X=165mm (right), Logo is at X=15mm (left)
-            $pdf->Image($logopath, 15, 249, 25, 0, '', '', '', false, 300, '', false, false, 0, false, false, false);
+            $pdf->Image($logopath, 15, 249, 25, 25, '', '', '', false, 300, '', false, false, 0, 'LT', false, false);
         }
 
         // Add QR code at bottom of page 2 (Phase 7 - Verification System).
