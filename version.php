@@ -24,8 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2025102102;               // The current plugin version (Date: YYYYMMDDXX).
+$plugin->version   = 2025102103;               // The current plugin version (Date: YYYYMMDDXX).
 $plugin->requires  = 2025092600;               // Requires Moodle 5.1.
 $plugin->component = 'gradereport_transcript'; // Full name of the plugin (used for diagnostics).
 $plugin->maturity  = MATURITY_STABLE;          // Production-ready stable release.
-$plugin->release   = '1.0.2';                  // CRITICAL FIX: Empty courses now show N/A instead of incorrect "A" grades (Moodle best practices).
+$plugin->release   = '1.0.3';                  // NEW FEATURE: School logos now display on transcripts (page 1 top-left, page 2 bottom-left).

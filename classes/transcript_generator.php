@@ -69,6 +69,9 @@ class gradereport_transcript_generator {
     /** @var string Verification code for official transcripts */
     protected $verificationcode;
 
+    /** @var string|null Temporary path to school logo file */
+    protected $logotemppath = null;
+
     /**
      * Constructor
      *
@@ -406,7 +409,24 @@ class gradereport_transcript_generator {
      * @param bool $official Whether this is official
      */
     protected function add_header($pdf, $official) {
-        // School name.
+        // Add school logo at top-left (if available).
+        // Position: X=15mm (left margin), Y=15mm (top margin)
+        // Size: 40mm width, auto height (maintains aspect ratio)
+        $logopath = $this->get_school_logo_path();
+        if ($logopath !== null) {
+            // Save current Y position before adding logo.
+            $currenty = $pdf->GetY();
+
+            // Add logo with absolute positioning to avoid affecting text flow.
+            // Parameters: file, x, y, w, h, type, link, align, resize, dpi, palign, ismask, imgmask, border, fitbox, hidden, fitonpage
+            $pdf->Image($logopath, 15, 15, 40, 0, '', '', '', false, 300, '', false, false, 0, false, false, false);
+
+            // Reset Y position to continue with centered school name.
+            // This ensures the school name remains centered and not affected by logo.
+            $pdf->SetY($currenty);
+        }
+
+        // School name (centered, not affected by logo positioning).
         $pdf->SetFont('helvetica', 'B', 16);
         $pdf->Cell(0, 10, $this->school->name, 0, 1, 'C');
 
@@ -913,6 +933,18 @@ class gradereport_transcript_generator {
         $pdf->SetFont('helvetica', '', 9);
         $pdf->MultiCell(0, 5, 'The acceptance and applicability of transfer credits and hours is subject to the sole discretion of the receiving institution. This institution makes no guarantee regarding the transferability of credits earned here to other institutions. Students are advised to consult with the receiving institution regarding their specific transfer credit policies before enrolling.', 0, 'L');
 
+        // Add school logo at bottom-left of page 2 (if available).
+        // Position matches QR code vertical position but on left side.
+        // Logo: Bottom-left, QR Code: Bottom-right
+        $logopath = $this->get_school_logo_path();
+        if ($logopath !== null) {
+            // Position: X=15mm (left margin), Y=249mm (same as QR code vertical position)
+            // Size: 25mm width (matches QR code size), auto height
+            // A4 page: 210mm x 297mm, margins: 15mm
+            // QR code is at X=165mm (right), Logo is at X=15mm (left)
+            $pdf->Image($logopath, 15, 249, 25, 0, '', '', '', false, 300, '', false, false, 0, false, false, false);
+        }
+
         // Add QR code at bottom of page 2 (Phase 7 - Verification System).
         if (!empty($this->verificationcode)) {
             $this->add_qr_code_to_page($pdf);
@@ -932,5 +964,75 @@ class gradereport_transcript_generator {
         $date = date('Y-m-d');
 
         return "Transcript_{$type}_{$studentname}_{$programname}_{$date}.pdf";
+    }
+
+    /**
+     * Get school logo file path for use in PDF
+     *
+     * Retrieves the school logo from Moodle's File API and copies it to a temporary
+     * location for use with TCPDF. The temporary file is automatically cleaned up
+     * when the object is destroyed.
+     *
+     * Following Moodle 2025 File API best practices:
+     * - Uses get_file_storage() to access File API
+     * - Uses get_area_files() to retrieve files from specific file area
+     * - Uses copy_content_to_temp() for temporary file creation
+     *
+     * @return string|null Path to temporary logo file, or null if no logo exists
+     */
+    protected function get_school_logo_path() {
+        // Return cached path if already retrieved.
+        if ($this->logotemppath !== null) {
+            return $this->logotemppath;
+        }
+
+        // Get file storage instance.
+        $fs = get_file_storage();
+
+        // Get system context.
+        $context = context_system::instance();
+
+        // Retrieve logo file from File API.
+        // Component: gradereport_transcript
+        // File area: schoollogo
+        // Item ID: school ID
+        $files = $fs->get_area_files(
+            $context->id,
+            'gradereport_transcript',
+            'schoollogo',
+            $this->school->id,
+            'filename',
+            false  // Do not include directories.
+        );
+
+        // Check if logo file exists.
+        if (empty($files)) {
+            return null;  // No logo uploaded.
+        }
+
+        // Get first (and should be only) file.
+        $file = reset($files);
+
+        // Copy file content to temporary location for TCPDF.
+        // TCPDF requires a file path, not a stored_file object.
+        $temppath = $file->copy_content_to_temp();
+
+        // Cache the path for reuse.
+        $this->logotemppath = $temppath;
+
+        return $temppath;
+    }
+
+    /**
+     * Destructor
+     *
+     * Clean up temporary logo file if it exists.
+     * Following Moodle best practices for resource cleanup.
+     */
+    public function __destruct() {
+        // Clean up temporary logo file.
+        if ($this->logotemppath !== null && file_exists($this->logotemppath)) {
+            @unlink($this->logotemppath);
+        }
     }
 }
