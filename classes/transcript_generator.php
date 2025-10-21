@@ -411,13 +411,13 @@ class gradereport_transcript_generator {
     protected function add_header($pdf, $official) {
         // Add school logo at top-left (if available).
         // Position: X=15mm (left margin), Y=15mm (top margin)
-        // Maximum size: 40mm width × 20mm height
+        // Maximum size: 20mm width × 12mm height (letterhead standard)
         $logoinfo = $this->get_school_logo_path();
         if ($logoinfo !== null) {
             // Save current Y position before adding logo.
             $currenty = $pdf->GetY();
 
-            // Calculate constrained dimensions for 40mm × 20mm max box.
+            // Calculate constrained dimensions for 20mm × 12mm max box (letterhead standard).
             // This uses manual aspect ratio calculation because TCPDF's fitbox
             // parameter is unreliable (confirmed bug - only works 79% of time).
             // By calculating which dimension to constrain and setting the other to 0,
@@ -425,13 +425,13 @@ class gradereport_transcript_generator {
             $dims = $this->calculate_logo_dimensions(
                 $logoinfo['width'],   // Image width in pixels
                 $logoinfo['height'],  // Image height in pixels
-                40,                   // Max width in mm
-                20                    // Max height in mm
+                20,                   // Max width in mm (letterhead standard)
+                12                    // Max height in mm (letterhead standard)
             );
 
             // Add logo with calculated dimensions (one will be 0 for auto-calculate).
             // TCPDF reliably calculates the 0 dimension proportionally.
-            // This GUARANTEES logo fits within 40×20mm box with perfect aspect ratio.
+            // This GUARANTEES logo fits within 20×12mm box with perfect aspect ratio.
             $pdf->Image($logoinfo['path'], 15, 15, $dims['width'], $dims['height']);
 
             // Reset Y position to continue with centered school name.

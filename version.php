@@ -24,8 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2025102105;               // The current plugin version (Date: YYYYMMDDXX).
+$plugin->version   = 2025102106;               // The current plugin version (Date: YYYYMMDDXX).
 $plugin->requires  = 2025092600;               // Requires Moodle 5.1.
 $plugin->component = 'gradereport_transcript'; // Full name of the plugin (used for diagnostics).
 $plugin->maturity  = MATURITY_STABLE;          // Production-ready stable release.
-$plugin->release   = '1.0.5';                  // CRITICAL FIX: Logo overlap resolved using manual dimension calculation (fitbox unreliable).
+$plugin->release   = '1.0.6';                  // CRITICAL FIX: Logo sizing corrected to 20×12mm letterhead standard (prevents overlap).
