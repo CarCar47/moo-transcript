@@ -172,10 +172,16 @@ class gradereport_transcript_generator {
     /**
      * Get student grades for all mapped courses
      *
+     * Uses Moodle's official Gradebook API (grade_get_course_grade) to retrieve
+     * final course grades. This method handles grade overrides, hidden grades,
+     * locked grades, and automatically recalculates stale grades.
+     *
      * @return array Array of course data with grades
      */
     public function get_student_grades() {
-        global $DB;
+        global $DB, $CFG;
+
+        require_once($CFG->libdir . '/gradelib.php');
 
         if (!isset($this->grades)) {
             $mappings = $this->get_course_mappings();
@@ -188,24 +194,37 @@ class gradereport_transcript_generator {
                     continue; // Skip if course doesn't exist.
                 }
 
-                // Get course final grade item.
+                // Check if grade needs recalculation before fetching.
                 $gradeitem = grade_item::fetch([
                     'courseid' => $course->id,
                     'itemtype' => 'course'
                 ]);
 
+                if ($gradeitem && $gradeitem->needsupdate) {
+                    // Force recalculation to ensure fresh, accurate grades.
+                    // This is critical for transcripts to show current grades.
+                    grade_regrade_final_grades($course->id);
+                }
+
                 $gradevalue = null;
                 $gradeletter = null;
                 $gradepercentage = null;
 
-                if ($gradeitem) {
-                    // Fetch grade for this user.
-                    $gradegrade = new grade_grade(['itemid' => $gradeitem->id, 'userid' => $this->userid], false);
+                // Use Moodle's official API to get course grade.
+                // This handles all gradebook logic: overrides, hidden grades, aggregation, etc.
+                $coursegrade = grade_get_course_grade($this->userid, $course->id);
 
-                    if ($gradegrade && isset($gradegrade->finalgrade) && $gradegrade->finalgrade !== null) {
-                        $gradevalue = $gradegrade->finalgrade;
+                if ($coursegrade && isset($coursegrade->grade) && $coursegrade->grade !== null) {
+                    $gradevalue = $coursegrade->grade;
 
-                        // Get letter grade.
+                    // Re-fetch grade item for letter formatting (after potential recalculation).
+                    $gradeitem = grade_item::fetch([
+                        'courseid' => $course->id,
+                        'itemtype' => 'course'
+                    ]);
+
+                    if ($gradeitem) {
+                        // Get letter grade using Moodle's grade formatter.
                         $gradeletter = grade_format_gradevalue(
                             $gradevalue,
                             $gradeitem,
