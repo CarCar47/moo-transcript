@@ -58,47 +58,47 @@ class helper {
 
         echo $OUTPUT->heading(get_string('filters', 'gradereport_transcript'), 3);
 
-        echo html_writer::start_tag('form', ['method' => 'get', 'action' => $PAGE->url->out_omit_querystring()]);
-        echo html_writer::start_div('form-inline mb-3');
+        echo \html_writer::start_tag('form', ['method' => 'get', 'action' => $PAGE->url->out_omit_querystring()]);
+        echo \html_writer::start_div('form-inline mb-3');
 
         // Status filter.
-        echo html_writer::start_div('form-group mr-3');
-        echo html_writer::label(get_string('status', 'gradereport_transcript'), 'status', false, ['class' => 'mr-2']);
+        echo \html_writer::start_div('form-group mr-3');
+        echo \html_writer::label(get_string('status', 'gradereport_transcript'), 'status', false, ['class' => 'mr-2']);
         $statusoptions = [
             'all' => get_string('all'),
             'pending' => get_string('statuspending', 'gradereport_transcript'),
             'approved' => get_string('statusapproved', 'gradereport_transcript'),
             'rejected' => get_string('statusrejected', 'gradereport_transcript')
         ];
-        echo html_writer::select($statusoptions, 'status', $status, false, ['class' => 'form-control', 'id' => 'status']);
-        echo html_writer::end_div();
+        echo \html_writer::select($statusoptions, 'status', $status, false, ['class' => 'form-control', 'id' => 'status']);
+        echo \html_writer::end_div();
 
         // Request type filter.
-        echo html_writer::start_div('form-group mr-3');
-        echo html_writer::label(get_string('requesttype', 'gradereport_transcript'), 'requesttype', false, ['class' => 'mr-2']);
+        echo \html_writer::start_div('form-group mr-3');
+        echo \html_writer::label(get_string('requesttype', 'gradereport_transcript'), 'requesttype', false, ['class' => 'mr-2']);
         $typeoptions = [
             'all' => get_string('all'),
             'official' => get_string('transcriptofficial', 'gradereport_transcript'),
             'unofficial' => get_string('transcriptunofficial', 'gradereport_transcript')
         ];
-        echo html_writer::select($typeoptions, 'requesttype', $requesttype, false, ['class' => 'form-control', 'id' => 'requesttype']);
-        echo html_writer::end_div();
+        echo \html_writer::select($typeoptions, 'requesttype', $requesttype, false, ['class' => 'form-control', 'id' => 'requesttype']);
+        echo \html_writer::end_div();
 
         // Payment status filter.
-        echo html_writer::start_div('form-group mr-3');
-        echo html_writer::label(get_string('paymentstatus', 'gradereport_transcript'), 'paymentstatus', false, ['class' => 'mr-2']);
+        echo \html_writer::start_div('form-group mr-3');
+        echo \html_writer::label(get_string('paymentstatus', 'gradereport_transcript'), 'paymentstatus', false, ['class' => 'mr-2']);
         $paymentoptions = [
             'all' => get_string('all'),
             'pending' => get_string('paymentpending', 'gradereport_transcript'),
             'paid' => get_string('paymentpaid', 'gradereport_transcript'),
             'free' => get_string('paymentfree', 'gradereport_transcript')
         ];
-        echo html_writer::select($paymentoptions, 'paymentstatus', $paymentstatus, false, ['class' => 'form-control', 'id' => 'paymentstatus']);
-        echo html_writer::end_div();
+        echo \html_writer::select($paymentoptions, 'paymentstatus', $paymentstatus, false, ['class' => 'form-control', 'id' => 'paymentstatus']);
+        echo \html_writer::end_div();
 
         // Delivery status filter.
-        echo html_writer::start_div('form-group mr-3');
-        echo html_writer::label(get_string('deliverystatus', 'gradereport_transcript'), 'deliverystatus', false, ['class' => 'mr-2']);
+        echo \html_writer::start_div('form-group mr-3');
+        echo \html_writer::label(get_string('deliverystatus', 'gradereport_transcript'), 'deliverystatus', false, ['class' => 'mr-2']);
         $deliveryoptions = [
             'all' => get_string('all'),
             'pending' => get_string('deliverypending', 'gradereport_transcript'),
@@ -106,18 +106,18 @@ class helper {
             'delivered' => get_string('deliverydelivered', 'gradereport_transcript'),
             'pickedup' => get_string('deliverypickedup', 'gradereport_transcript')
         ];
-        echo html_writer::select($deliveryoptions, 'deliverystatus', $deliverystatus, false, ['class' => 'form-control', 'id' => 'deliverystatus']);
-        echo html_writer::end_div();
+        echo \html_writer::select($deliveryoptions, 'deliverystatus', $deliverystatus, false, ['class' => 'form-control', 'id' => 'deliverystatus']);
+        echo \html_writer::end_div();
 
         // Submit button.
-        echo html_writer::empty_tag('input', [
+        echo \html_writer::empty_tag('input', [
             'type' => 'submit',
             'value' => get_string('filter', 'gradereport_transcript'),
             'class' => 'btn btn-primary'
         ]);
 
-        echo html_writer::end_div();
-        echo html_writer::end_tag('form');
+        echo \html_writer::end_div();
+        echo \html_writer::end_tag('form');
     }
 
     /**
