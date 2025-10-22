@@ -507,42 +507,48 @@ class gradereport_transcript_generator {
         $pdf->SetFont('helvetica', 'B', 11);
         $pdf->Cell(0, 7, 'STUDENT INFORMATION', 0, 1, 'L');
 
+        // Row 1: Name | Start Date (if available)
         $pdf->SetFont('helvetica', '', 10);
         $pdf->Cell(40, 6, 'Name:', 0, 0, 'L');
         $pdf->SetFont('helvetica', 'B', 10);
-        $pdf->Cell(0, 6, fullname($this->user), 0, 1, 'L');
+        if ($this->programstartdate !== null) {
+            // Name on left, Start Date on right (2-column layout)
+            $pdf->Cell(55, 6, fullname($this->user), 0, 0, 'L');
+            $pdf->SetFont('helvetica', '', 10);
+            $pdf->Cell(35, 6, 'Start Date:', 0, 0, 'L');
+            $pdf->SetFont('helvetica', 'B', 10);
+            $pdf->Cell(0, 6, userdate($this->programstartdate, get_string('strftimedatefullshort')), 0, 1, 'L');
+        } else {
+            $pdf->Cell(0, 6, fullname($this->user), 0, 1, 'L');
+        }
 
+        // Row 2: Student ID | Graduation/Withdrawn Date (if available)
         $pdf->SetFont('helvetica', '', 10);
         $pdf->Cell(40, 6, 'Student ID:', 0, 0, 'L');
         $pdf->SetFont('helvetica', 'B', 10);
-        $pdf->Cell(0, 6, $this->user->id, 0, 1, 'L');
+        if ($this->completionstatus === 'graduated' && $this->graduationdate !== null) {
+            // Student ID on left, Graduation Date on right
+            $pdf->Cell(55, 6, $this->user->id, 0, 0, 'L');
+            $pdf->SetFont('helvetica', '', 10);
+            $pdf->Cell(35, 6, 'Graduation Date:', 0, 0, 'L');
+            $pdf->SetFont('helvetica', 'B', 10);
+            $pdf->Cell(0, 6, userdate($this->graduationdate, get_string('strftimedatefullshort')), 0, 1, 'L');
+        } else if ($this->completionstatus === 'withdrawn' && $this->withdrawndate !== null) {
+            // Student ID on left, Withdrawn Date on right
+            $pdf->Cell(55, 6, $this->user->id, 0, 0, 'L');
+            $pdf->SetFont('helvetica', '', 10);
+            $pdf->Cell(35, 6, 'Withdrawn Date:', 0, 0, 'L');
+            $pdf->SetFont('helvetica', 'B', 10);
+            $pdf->Cell(0, 6, userdate($this->withdrawndate, get_string('strftimedatefullshort')), 0, 1, 'L');
+        } else {
+            $pdf->Cell(0, 6, $this->user->id, 0, 1, 'L');
+        }
 
+        // Row 3: Email (always full width)
         $pdf->SetFont('helvetica', '', 10);
         $pdf->Cell(40, 6, 'Email:', 0, 0, 'L');
         $pdf->SetFont('helvetica', 'B', 10);
         $pdf->Cell(0, 6, $this->user->email, 0, 1, 'L');
-
-        // Add program completion dates if available (official transcripts only).
-        if ($this->programstartdate !== null) {
-            $pdf->SetFont('helvetica', '', 10);
-            $pdf->Cell(40, 6, 'Start Date:', 0, 0, 'L');
-            $pdf->SetFont('helvetica', 'B', 10);
-            $pdf->Cell(0, 6, userdate($this->programstartdate, get_string('strftimedatefullshort')), 0, 1, 'L');
-        }
-
-        if ($this->completionstatus === 'graduated' && $this->graduationdate !== null) {
-            $pdf->SetFont('helvetica', '', 10);
-            $pdf->Cell(40, 6, 'Graduation Date:', 0, 0, 'L');
-            $pdf->SetFont('helvetica', 'B', 10);
-            $pdf->Cell(0, 6, userdate($this->graduationdate, get_string('strftimedatefullshort')), 0, 1, 'L');
-        }
-
-        if ($this->completionstatus === 'withdrawn' && $this->withdrawndate !== null) {
-            $pdf->SetFont('helvetica', '', 10);
-            $pdf->Cell(40, 6, 'Withdrawn Date:', 0, 0, 'L');
-            $pdf->SetFont('helvetica', 'B', 10);
-            $pdf->Cell(0, 6, userdate($this->withdrawndate, get_string('strftimedatefullshort')), 0, 1, 'L');
-        }
 
         $pdf->Ln(5);
     }
