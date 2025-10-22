@@ -38,7 +38,7 @@ require_once($CFG->dirroot . '/grade/report/lib.php');
  * @param stdClass|null $course Course object (not used in this plugin)
  * @return void
  */
-function gradereport_transcript_myprofile_navigation(tree $tree, stdClass $user, bool $iscurrentuser, ?stdClass $course) {
+function gradereport_transcript_myprofile_navigation(\core_user\output\myprofile\tree $tree, stdClass $user, bool $iscurrentuser, ?stdClass $course) {
     global $USER;
 
     // Determine if viewing own profile
