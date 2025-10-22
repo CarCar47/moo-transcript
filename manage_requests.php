@@ -71,6 +71,14 @@ if ($action === 'details' && $requestid) {
         $updaterequest->trackingnumber = $data->trackingnumber ?? null;
         $updaterequest->deliverynotes = $data->deliverynotes ?? null;
 
+        // Save program completion fields (for official transcripts).
+        if ($request->requesttype === 'official') {
+            $updaterequest->programstartdate = $data->programstartdate ?? null;
+            $updaterequest->completionstatus = $data->completionstatus ?? null;
+            $updaterequest->graduationdate = $data->graduationdate ?? null;
+            $updaterequest->withdrawndate = $data->withdrawndate ?? null;
+        }
+
         // Handle pickup person name (store in delivery notes with structured format).
         if ($request->deliverymethod === 'pickup' && !empty($data->pickupperson)) {
             $pickupinfo = "Picked up by: " . $data->pickupperson;
@@ -149,6 +157,7 @@ if ($action === 'details' && $requestid) {
         'programid' => $request->programid,
         'userid' => $request->userid,
         'official' => ($request->requesttype === 'official' ? 1 : 0),
+        'requestid' => $request->id,
         'action' => 'download',
         'sesskey' => sesskey()
     ]);

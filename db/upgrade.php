@@ -211,5 +211,39 @@ function xmldb_gradereport_transcript_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2025101926, 'gradereport', 'transcript');
     }
 
+    // Upgrade to version 2025102207 - Add program completion dates for official transcripts.
+    if ($oldversion < 2025102207) {
+
+        // Define table gradereport_transcript_requests to be updated.
+        $table = new xmldb_table('gradereport_transcript_requests');
+
+        // Add programstartdate field.
+        $field = new xmldb_field('programstartdate', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'approvaldate');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Add completionstatus field.
+        $field = new xmldb_field('completionstatus', XMLDB_TYPE_CHAR, '20', null, null, null, null, 'programstartdate');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Add graduationdate field.
+        $field = new xmldb_field('graduationdate', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'completionstatus');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Add withdrawndate field.
+        $field = new xmldb_field('withdrawndate', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'graduationdate');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Transcript savepoint reached.
+        upgrade_plugin_savepoint(true, 2025102207, 'gradereport', 'transcript');
+    }
+
     return true;
 }

@@ -89,6 +89,39 @@ class request_details_form extends \moodleform {
         $mform->setType('paymentnotes', PARAM_TEXT);
         $mform->addHelpButton('paymentnotes', 'paymentnotes', 'gradereport_transcript');
 
+        // Program Completion Information Section (Official Transcripts Only).
+        if ($request->requesttype === 'official') {
+            $mform->addElement('header', 'completionheader', get_string('programcompletioninformation', 'gradereport_transcript'));
+            $mform->addHelpButton('completionheader', 'programcompletioninformation', 'gradereport_transcript');
+
+            // Program start date.
+            $mform->addElement('date_selector', 'programstartdate',
+                get_string('programstartdate', 'gradereport_transcript'), ['optional' => true]);
+            $mform->addHelpButton('programstartdate', 'programstartdate', 'gradereport_transcript');
+
+            // Completion status.
+            $completionstatuses = [
+                '' => get_string('select'),
+                'graduated' => get_string('completionstatus_graduated', 'gradereport_transcript'),
+                'withdrawn' => get_string('completionstatus_withdrawn', 'gradereport_transcript')
+            ];
+            $mform->addElement('select', 'completionstatus',
+                get_string('completionstatus', 'gradereport_transcript'), $completionstatuses);
+            $mform->addHelpButton('completionstatus', 'completionstatus', 'gradereport_transcript');
+
+            // Graduation date (only show if status is graduated).
+            $mform->addElement('date_selector', 'graduationdate',
+                get_string('graduationdate', 'gradereport_transcript'), ['optional' => true]);
+            $mform->addHelpButton('graduationdate', 'graduationdate', 'gradereport_transcript');
+            $mform->hideIf('graduationdate', 'completionstatus', 'neq', 'graduated');
+
+            // Withdrawn date (only show if status is withdrawn).
+            $mform->addElement('date_selector', 'withdrawndate',
+                get_string('withdrawndate', 'gradereport_transcript'), ['optional' => true]);
+            $mform->addHelpButton('withdrawndate', 'withdrawndate', 'gradereport_transcript');
+            $mform->hideIf('withdrawndate', 'completionstatus', 'neq', 'withdrawn');
+        }
+
         // Delivery Information Section.
         $mform->addElement('header', 'deliveryheader', get_string('deliveryinformation', 'gradereport_transcript'));
 
@@ -140,7 +173,7 @@ class request_details_form extends \moodleform {
         $mform->setType('requestid', PARAM_INT);
 
         // Set defaults from request object.
-        $this->set_data([
+        $defaults = [
             'paymentstatus' => $request->paymentstatus,
             'paymentmethod' => $request->paymentmethod,
             'receiptnumber' => $request->receiptnumber,
@@ -150,7 +183,17 @@ class request_details_form extends \moodleform {
             'deliverydate' => $request->deliverydate ?: null,
             'trackingnumber' => $request->trackingnumber,
             'deliverynotes' => $request->deliverynotes
-        ]);
+        ];
+
+        // Add program completion fields if official transcript.
+        if ($request->requesttype === 'official') {
+            $defaults['programstartdate'] = $request->programstartdate ?: null;
+            $defaults['completionstatus'] = $request->completionstatus ?: '';
+            $defaults['graduationdate'] = $request->graduationdate ?: null;
+            $defaults['withdrawndate'] = $request->withdrawndate ?: null;
+        }
+
+        $this->set_data($defaults);
 
         // Extract pickup person from delivery notes if present (backward compatibility).
         if ($request->deliverymethod === 'pickup' && !empty($request->deliverynotes)) {
@@ -195,6 +238,18 @@ class request_details_form extends \moodleform {
         if ($data['deliverystatus'] === 'pickedup') {
             if (empty($data['pickupperson'])) {
                 $errors['pickupperson'] = get_string('required');
+            }
+        }
+
+        // Validate program completion fields for official transcripts.
+        if (isset($data['completionstatus']) && !empty($data['completionstatus'])) {
+            // Validate graduation date if status is graduated.
+            if ($data['completionstatus'] === 'graduated' && empty($data['graduationdate'])) {
+                $errors['graduationdate'] = get_string('required');
+            }
+            // Validate withdrawn date if status is withdrawn.
+            if ($data['completionstatus'] === 'withdrawn' && empty($data['withdrawndate'])) {
+                $errors['withdrawndate'] = get_string('required');
             }
         }
 

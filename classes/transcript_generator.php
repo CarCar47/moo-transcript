@@ -72,6 +72,18 @@ class gradereport_transcript_generator {
     /** @var string|null Temporary path to school logo file */
     protected $logotemppath = null;
 
+    /** @var int|null Program start date (Unix timestamp) */
+    protected $programstartdate = null;
+
+    /** @var string|null Completion status (graduated or withdrawn) */
+    protected $completionstatus = null;
+
+    /** @var int|null Graduation date (Unix timestamp) */
+    protected $graduationdate = null;
+
+    /** @var int|null Withdrawn date (Unix timestamp) */
+    protected $withdrawndate = null;
+
     /**
      * Constructor
      *
@@ -115,6 +127,21 @@ class gradereport_transcript_generator {
         // Initialize grade calculator.
         require_once(__DIR__ . '/grade_calculator.php');
         $this->gradecalculator = new gradereport_transcript_grade_calculator();
+    }
+
+    /**
+     * Set program completion dates (for official transcripts)
+     *
+     * @param int|null $startdate Program start date (Unix timestamp)
+     * @param string|null $status Completion status (graduated or withdrawn)
+     * @param int|null $graduationdate Graduation date (Unix timestamp)
+     * @param int|null $withdrawndate Withdrawn date (Unix timestamp)
+     */
+    public function set_completion_dates($startdate, $status, $graduationdate, $withdrawndate) {
+        $this->programstartdate = $startdate;
+        $this->completionstatus = $status;
+        $this->graduationdate = $graduationdate;
+        $this->withdrawndate = $withdrawndate;
     }
 
     /**
@@ -494,6 +521,28 @@ class gradereport_transcript_generator {
         $pdf->Cell(40, 6, 'Email:', 0, 0, 'L');
         $pdf->SetFont('helvetica', 'B', 10);
         $pdf->Cell(0, 6, $this->user->email, 0, 1, 'L');
+
+        // Add program completion dates if available (official transcripts only).
+        if ($this->programstartdate !== null) {
+            $pdf->SetFont('helvetica', '', 10);
+            $pdf->Cell(40, 6, 'Start Date:', 0, 0, 'L');
+            $pdf->SetFont('helvetica', 'B', 10);
+            $pdf->Cell(0, 6, userdate($this->programstartdate, get_string('strftimedatefullshort')), 0, 1, 'L');
+        }
+
+        if ($this->completionstatus === 'graduated' && $this->graduationdate !== null) {
+            $pdf->SetFont('helvetica', '', 10);
+            $pdf->Cell(40, 6, 'Graduation Date:', 0, 0, 'L');
+            $pdf->SetFont('helvetica', 'B', 10);
+            $pdf->Cell(0, 6, userdate($this->graduationdate, get_string('strftimedatefullshort')), 0, 1, 'L');
+        }
+
+        if ($this->completionstatus === 'withdrawn' && $this->withdrawndate !== null) {
+            $pdf->SetFont('helvetica', '', 10);
+            $pdf->Cell(40, 6, 'Withdrawn Date:', 0, 0, 'L');
+            $pdf->SetFont('helvetica', 'B', 10);
+            $pdf->Cell(0, 6, userdate($this->withdrawndate, get_string('strftimedatefullshort')), 0, 1, 'L');
+        }
 
         $pdf->Ln(5);
     }

@@ -571,6 +571,20 @@ $string['requestsummary'] = 'Request Summary';
 $string['requestupdated'] = 'Request details updated successfully';
 $string['details'] = 'Details';
 
+// Program completion dates for official transcripts (v1.0.7)
+$string['programcompletioninformation'] = 'Program Completion Information';
+$string['programcompletioninformation_help'] = 'Enter the program start date and completion status for official transcripts. These dates will appear on the official transcript PDF.';
+$string['programstartdate'] = 'Program Start Date';
+$string['programstartdate_help'] = 'The date when the student began this program.';
+$string['completionstatus'] = 'Completion Status';
+$string['completionstatus_help'] = 'Select whether the student graduated from the program or withdrew.';
+$string['completionstatus_graduated'] = 'Graduated';
+$string['completionstatus_withdrawn'] = 'Withdrawn';
+$string['graduationdate'] = 'Graduation Date';
+$string['graduationdate_help'] = 'The date when the student graduated from this program.';
+$string['withdrawndate'] = 'Withdrawn Date';
+$string['withdrawndate_help'] = 'The date when the student withdrew from this program.';
+
 // Payment methods
 $string['paymentmethod'] = 'Payment Method';
 $string['paymentmethod_help'] = 'Select the payment method used for this transaction.';

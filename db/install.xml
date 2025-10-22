@@ -113,6 +113,10 @@
         <FIELD NAME="paymentnotes" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Additional payment information"/>
         <FIELD NAME="approvedby" TYPE="int" LENGTH="10" NOTNULL="false" DEFAULT="0" SEQUENCE="false" COMMENT="User ID who approved/rejected"/>
         <FIELD NAME="approvaldate" TYPE="int" LENGTH="10" NOTNULL="false" DEFAULT="0" SEQUENCE="false" COMMENT="Date of approval/rejection"/>
+        <FIELD NAME="programstartdate" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Date student started the program (for official transcripts)"/>
+        <FIELD NAME="completionstatus" TYPE="char" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="Student completion status: graduated or withdrawn (for official transcripts)"/>
+        <FIELD NAME="graduationdate" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Date student graduated from program (if status=graduated)"/>
+        <FIELD NAME="withdrawndate" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Date student withdrew from program (if status=withdrawn)"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
       </FIELDS>

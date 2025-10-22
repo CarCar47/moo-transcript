@@ -33,6 +33,7 @@ $programid = required_param('programid', PARAM_INT);
 $userid = optional_param('userid', $USER->id, PARAM_INT);
 $official = optional_param('official', 0, PARAM_INT);
 $action = optional_param('action', 'view', PARAM_ALPHA);
+$requestid = optional_param('requestid', 0, PARAM_INT);
 
 // Security checks - simple user-based logic.
 // Students can view their own transcripts, admins/managers can view anyone's.
@@ -84,6 +85,19 @@ if ($action === 'download') {
     try {
         // Create transcript generator.
         $generator = new gradereport_transcript_generator($programid, $userid);
+
+        // If request ID provided and this is official, load completion dates.
+        if ($requestid > 0 && $official) {
+            $request = $DB->get_record('gradereport_transcript_requests', ['id' => $requestid]);
+            if ($request && $request->requesttype === 'official') {
+                $generator->set_completion_dates(
+                    $request->programstartdate,
+                    $request->completionstatus,
+                    $request->graduationdate,
+                    $request->withdrawndate
+                );
+            }
+        }
 
         // Generate PDF (output mode 'D' = Download).
         $generator->generate_pdf('D', (bool)$official);
