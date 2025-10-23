@@ -24,8 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2025102207;               // The current plugin version (Date: YYYYMMDDXX).
+$plugin->version   = 2025102208;               // The current plugin version (Date: YYYYMMDDXX).
 $plugin->requires  = 2025092600;               // Requires Moodle 5.1.
 $plugin->component = 'gradereport_transcript'; // Full name of the plugin (used for diagnostics).
 $plugin->maturity  = MATURITY_STABLE;          // Production-ready stable release.
-$plugin->release   = '1.0.7';                  // Add program start/graduation/withdrawn dates for official transcripts (AACRAO compliant).
+$plugin->release   = '1.0.8';                  // Fix optional date field handling (date_selector with optional=true).

@@ -73,10 +73,12 @@ if ($action === 'details' && $requestid) {
 
         // Save program completion fields (for official transcripts).
         if ($request->requesttype === 'official') {
-            $updaterequest->programstartdate = $data->programstartdate ?? null;
-            $updaterequest->completionstatus = $data->completionstatus ?? null;
-            $updaterequest->graduationdate = $data->graduationdate ?? null;
-            $updaterequest->withdrawndate = $data->withdrawndate ?? null;
+            // Convert 0 (unchecked optional date checkbox) to null for database storage.
+            // Moodle date_selector with optional=true returns 0 when unchecked, timestamp when checked.
+            $updaterequest->programstartdate = !empty($data->programstartdate) ? $data->programstartdate : null;
+            $updaterequest->completionstatus = !empty($data->completionstatus) ? $data->completionstatus : null;
+            $updaterequest->graduationdate = !empty($data->graduationdate) ? $data->graduationdate : null;
+            $updaterequest->withdrawndate = !empty($data->withdrawndate) ? $data->withdrawndate : null;
         }
 
         // Handle pickup person name (store in delivery notes with structured format).

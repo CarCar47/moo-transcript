@@ -187,10 +187,12 @@ class request_details_form extends \moodleform {
 
         // Add program completion fields if official transcript.
         if ($request->requesttype === 'official') {
-            $defaults['programstartdate'] = $request->programstartdate ?: null;
-            $defaults['completionstatus'] = $request->completionstatus ?: '';
-            $defaults['graduationdate'] = $request->graduationdate ?: null;
-            $defaults['withdrawndate'] = $request->withdrawndate ?: null;
+            // Use 0 for unset dates (unchecked checkbox), actual timestamp for set dates.
+            // This ensures optional date_selector checkboxes work correctly.
+            $defaults['programstartdate'] = $request->programstartdate ? $request->programstartdate : 0;
+            $defaults['completionstatus'] = $request->completionstatus ?? '';
+            $defaults['graduationdate'] = $request->graduationdate ? $request->graduationdate : 0;
+            $defaults['withdrawndate'] = $request->withdrawndate ? $request->withdrawndate : 0;
         }
 
         $this->set_data($defaults);
