@@ -39,7 +39,10 @@ $requestid = optional_param('requestid', 0, PARAM_INT);
 $confirm = optional_param('confirm', 0, PARAM_INT);
 
 // Set up page.
-$PAGE->set_url(new moodle_url('/grade/report/transcript/manage_requests.php'));
+$PAGE->set_url(new moodle_url('/grade/report/transcript/manage_requests.php', [
+    'action' => $action,
+    'requestid' => $requestid
+]));
 $PAGE->set_context(context_system::instance());
 $PAGE->set_pagelayout('admin');
 $PAGE->set_title(get_string('managerequests', 'gradereport_transcript'));
@@ -52,7 +55,10 @@ if ($action === 'details' && $requestid) {
     $program = $DB->get_record('gradereport_transcript_programs', ['id' => $request->programid], '*', MUST_EXIST);
 
     // Create form.
-    $mform = new \gradereport_transcript\forms\request_details_form(null, ['request' => $request]);
+    $mform = new \gradereport_transcript\forms\request_details_form($PAGE->url, ['request' => $request]);
+
+    // Set default data (pass DB object directly, like manage_schools.php does).
+    $mform->set_data($request);
 
     // Handle form submission.
     if ($mform->is_cancelled()) {
@@ -64,21 +70,20 @@ if ($action === 'details' && $requestid) {
         $updaterequest->paymentstatus = $data->paymentstatus;
         $updaterequest->paymentmethod = $data->paymentmethod ?? null;
         $updaterequest->receiptnumber = $data->receiptnumber ?? null;
-        $updaterequest->paiddate = $data->paiddate ?? null;
+        $updaterequest->paiddate = \gradereport_transcript\forms\request_details_form::process_us_date($data, 'paiddate');
         $updaterequest->paymentnotes = $data->paymentnotes ?? null;
         $updaterequest->deliverystatus = $data->deliverystatus;
-        $updaterequest->deliverydate = $data->deliverydate ?? null;
+        $updaterequest->deliverydate = \gradereport_transcript\forms\request_details_form::process_us_date($data, 'deliverydate');
         $updaterequest->trackingnumber = $data->trackingnumber ?? null;
         $updaterequest->deliverynotes = $data->deliverynotes ?? null;
 
         // Save program completion fields (for official transcripts).
         if ($request->requesttype === 'official') {
-            // Convert 0 (unchecked optional date checkbox) to null for database storage.
-            // Moodle date_selector with optional=true returns 0 when unchecked, timestamp when checked.
-            $updaterequest->programstartdate = !empty($data->programstartdate) ? $data->programstartdate : null;
+            // Process custom US-format date fields.
+            $updaterequest->programstartdate = \gradereport_transcript\forms\request_details_form::process_us_date($data, 'programstartdate');
             $updaterequest->completionstatus = !empty($data->completionstatus) ? $data->completionstatus : null;
-            $updaterequest->graduationdate = !empty($data->graduationdate) ? $data->graduationdate : null;
-            $updaterequest->withdrawndate = !empty($data->withdrawndate) ? $data->withdrawndate : null;
+            $updaterequest->graduationdate = \gradereport_transcript\forms\request_details_form::process_us_date($data, 'graduationdate');
+            $updaterequest->withdrawndate = \gradereport_transcript\forms\request_details_form::process_us_date($data, 'withdrawndate');
         }
 
         // Handle pickup person name (store in delivery notes with structured format).

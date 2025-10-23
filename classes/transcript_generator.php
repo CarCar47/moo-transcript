@@ -517,7 +517,7 @@ class gradereport_transcript_generator {
             $pdf->SetFont('helvetica', '', 10);
             $pdf->Cell(35, 6, 'Start Date:', 0, 0, 'L');
             $pdf->SetFont('helvetica', 'B', 10);
-            $pdf->Cell(0, 6, userdate($this->programstartdate, get_string('strftimedatefullshort')), 0, 1, 'L');
+            $pdf->Cell(0, 6, date('m/d/y', $this->programstartdate), 0, 1, 'L');
         } else {
             $pdf->Cell(0, 6, fullname($this->user), 0, 1, 'L');
         }
@@ -532,14 +532,14 @@ class gradereport_transcript_generator {
             $pdf->SetFont('helvetica', '', 10);
             $pdf->Cell(35, 6, 'Graduation Date:', 0, 0, 'L');
             $pdf->SetFont('helvetica', 'B', 10);
-            $pdf->Cell(0, 6, userdate($this->graduationdate, get_string('strftimedatefullshort')), 0, 1, 'L');
+            $pdf->Cell(0, 6, date('m/d/y', $this->graduationdate), 0, 1, 'L');
         } else if ($this->completionstatus === 'withdrawn' && $this->withdrawndate !== null) {
             // Student ID on left, Withdrawn Date on right
             $pdf->Cell(55, 6, $this->user->id, 0, 0, 'L');
             $pdf->SetFont('helvetica', '', 10);
             $pdf->Cell(35, 6, 'Withdrawn Date:', 0, 0, 'L');
             $pdf->SetFont('helvetica', 'B', 10);
-            $pdf->Cell(0, 6, userdate($this->withdrawndate, get_string('strftimedatefullshort')), 0, 1, 'L');
+            $pdf->Cell(0, 6, date('m/d/y', $this->withdrawndate), 0, 1, 'L');
         } else {
             $pdf->Cell(0, 6, $this->user->id, 0, 1, 'L');
         }
@@ -807,7 +807,8 @@ class gradereport_transcript_generator {
             // Generate verification code.
             require_once(__DIR__ . '/verification_generator.php');
             $verifier = new gradereport_transcript_verification_generator();
-            $this->verificationcode = $verifier->generate_and_save($this->userid, $this->programid, 'transcript');
+            $documenttype = $official ? 'official' : 'unofficial';
+            $this->verificationcode = $verifier->generate_and_save($this->userid, $this->programid, $documenttype);
 
             // Issue date and verification code on same line (compact layout).
             $pdf->SetFont('helvetica', '', 8);

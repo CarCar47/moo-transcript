@@ -78,8 +78,9 @@ class request_details_form extends \moodleform {
         $mform->hideIf('receiptnumber', 'paymentstatus', 'eq', 'pending');
 
         // Date paid.
-        $mform->addElement('date_selector', 'paiddate', get_string('paiddate', 'gradereport_transcript'), ['optional' => true]);
-        $mform->addHelpButton('paiddate', 'paiddate', 'gradereport_transcript');
+        $this->add_us_date_selector('paiddate', get_string('paiddate', 'gradereport_transcript'));
+        $mform->addHelpButton('paiddate_group', 'paiddate', 'gradereport_transcript');
+        $this->set_us_date_default('paiddate', $request->paiddate ?? null);
 
         // Payment notes.
         $mform->addElement('textarea', 'paymentnotes', get_string('paymentnotes', 'gradereport_transcript'),
@@ -93,9 +94,9 @@ class request_details_form extends \moodleform {
             $mform->addHelpButton('completionheader', 'programcompletioninformation', 'gradereport_transcript');
 
             // Program start date.
-            $mform->addElement('date_selector', 'programstartdate',
-                get_string('programstartdate', 'gradereport_transcript'), ['optional' => true]);
-            $mform->addHelpButton('programstartdate', 'programstartdate', 'gradereport_transcript');
+            $this->add_us_date_selector('programstartdate', get_string('programstartdate', 'gradereport_transcript'));
+            $mform->addHelpButton('programstartdate_group', 'programstartdate', 'gradereport_transcript');
+            $this->set_us_date_default('programstartdate', $request->programstartdate ?? null);
 
             // Completion status.
             $completionstatuses = [
@@ -108,14 +109,14 @@ class request_details_form extends \moodleform {
             $mform->addHelpButton('completionstatus', 'completionstatus', 'gradereport_transcript');
 
             // Graduation date (only show if status is graduated).
-            $mform->addElement('date_selector', 'graduationdate',
-                get_string('graduationdate', 'gradereport_transcript'), ['optional' => true]);
-            $mform->addHelpButton('graduationdate', 'graduationdate', 'gradereport_transcript');
+            $this->add_us_date_selector('graduationdate', get_string('graduationdate', 'gradereport_transcript'));
+            $mform->addHelpButton('graduationdate_group', 'graduationdate', 'gradereport_transcript');
+            $this->set_us_date_default('graduationdate', $request->graduationdate ?? null);
 
             // Withdrawn date (only show if status is withdrawn).
-            $mform->addElement('date_selector', 'withdrawndate',
-                get_string('withdrawndate', 'gradereport_transcript'), ['optional' => true]);
-            $mform->addHelpButton('withdrawndate', 'withdrawndate', 'gradereport_transcript');
+            $this->add_us_date_selector('withdrawndate', get_string('withdrawndate', 'gradereport_transcript'));
+            $mform->addHelpButton('withdrawndate_group', 'withdrawndate', 'gradereport_transcript');
+            $this->set_us_date_default('withdrawndate', $request->withdrawndate ?? null);
         }
 
         // Delivery Information Section.
@@ -132,8 +133,9 @@ class request_details_form extends \moodleform {
         $mform->addHelpButton('deliverystatus', 'deliverystatus', 'gradereport_transcript');
 
         // Delivery date.
-        $mform->addElement('date_selector', 'deliverydate', get_string('deliverydate', 'gradereport_transcript'), ['optional' => true]);
-        $mform->addHelpButton('deliverydate', 'deliverydate', 'gradereport_transcript');
+        $this->add_us_date_selector('deliverydate', get_string('deliverydate', 'gradereport_transcript'));
+        $mform->addHelpButton('deliverydate_group', 'deliverydate', 'gradereport_transcript');
+        $this->set_us_date_default('deliverydate', $request->deliverydate ?? null);
 
         // Tracking number (for postal delivery only).
         $mform->addElement('text', 'trackingnumber', get_string('trackingnumber', 'gradereport_transcript'), ['size' => 40]);
@@ -167,41 +169,90 @@ class request_details_form extends \moodleform {
         $mform->addElement('hidden', 'requestid', $request->id);
         $mform->setType('requestid', PARAM_INT);
 
-        // Set defaults from request object.
-        $defaults = [
-            'paymentstatus' => $request->paymentstatus,
-            'paymentmethod' => $request->paymentmethod,
-            'receiptnumber' => $request->receiptnumber,
-            'paiddate' => $request->paiddate ?: null,
-            'paymentnotes' => $request->paymentnotes,
-            'deliverystatus' => $request->deliverystatus,
-            'deliverydate' => $request->deliverydate ?: null,
-            'trackingnumber' => $request->trackingnumber,
-            'deliverynotes' => $request->deliverynotes
-        ];
-
-        // Add program completion fields if official transcript.
-        if ($request->requesttype === 'official') {
-            // Use 0 for unset dates (unchecked checkbox), actual timestamp for set dates.
-            // This ensures optional date_selector checkboxes work correctly.
-            $defaults['programstartdate'] = $request->programstartdate ? $request->programstartdate : 0;
-            $defaults['completionstatus'] = $request->completionstatus ?? '';
-            $defaults['graduationdate'] = $request->graduationdate ? $request->graduationdate : 0;
-            $defaults['withdrawndate'] = $request->withdrawndate ? $request->withdrawndate : 0;
-        }
-
-        $this->set_data($defaults);
-
-        // Extract pickup person from delivery notes if present (backward compatibility).
-        if ($request->deliverymethod === 'pickup' && !empty($request->deliverynotes)) {
-            // Check if deliverynotes contains pickup person info.
-            if (preg_match('/Picked up by: (.+)/', $request->deliverynotes, $matches)) {
-                $this->set_data(['pickupperson' => trim($matches[1])]);
-            }
-        }
-
         // Action buttons.
         $this->add_action_buttons(true, get_string('savechanges'));
+    }
+
+    /**
+     * Add US-format date selector (Month/Day/Year with optional checkbox)
+     *
+     * @param string $name Field name
+     * @param string $label Field label
+     * @param bool $required Whether the field is required
+     */
+    private function add_us_date_selector($name, $label, $required = false) {
+        $mform = $this->_form;
+
+        // Create date group elements: checkbox, month, day, year
+        $elements = [];
+
+        // Optional checkbox
+        $elements[] = $mform->createElement('advcheckbox', $name . '_enabled', '', get_string('enable'), [], [0, 1]);
+
+        // Month dropdown (01-12)
+        $months = ['' => get_string('month', 'form')];
+        for ($i = 1; $i <= 12; $i++) {
+            $months[sprintf('%02d', $i)] = userdate(mktime(0, 0, 0, $i, 1, 2000), '%B');
+        }
+        $elements[] = $mform->createElement('select', $name . '_month', '', $months);
+
+        // Day dropdown (01-31)
+        $days = ['' => get_string('day', 'form')];
+        for ($i = 1; $i <= 31; $i++) {
+            $days[$i] = $i;
+        }
+        $elements[] = $mform->createElement('select', $name . '_day', '', $days);
+
+        // Year dropdown (1900-2050)
+        $years = ['' => get_string('year', 'form')];
+        for ($i = 1900; $i <= 2050; $i++) {
+            $years[$i] = $i;
+        }
+        $elements[] = $mform->createElement('select', $name . '_year', '', $years);
+
+        // Add group
+        $mform->addGroup($elements, $name . '_group', $label, ' ', false);
+
+        if ($required) {
+            $mform->addRule($name . '_group', get_string('required'), 'required');
+        }
+    }
+
+    /**
+     * Set default values for US-format date field from timestamp
+     *
+     * @param string $name Field name
+     * @param int|null $timestamp Timestamp value
+     */
+    private function set_us_date_default($name, $timestamp) {
+        $mform = $this->_form;
+
+        if (!empty($timestamp)) {
+            $mform->setDefault($name . '_enabled', 1);
+            $mform->setDefault($name . '_month', sprintf('%02d', date('m', $timestamp)));
+            $mform->setDefault($name . '_day', date('j', $timestamp));
+            $mform->setDefault($name . '_year', date('Y', $timestamp));
+        }
+    }
+
+    /**
+     * Process US-format date fields from form data
+     *
+     * @param object $data Form data
+     * @param string $name Field name
+     * @return int|null Timestamp or null
+     */
+    public static function process_us_date($data, $name) {
+        $enabled = $name . '_enabled';
+        $month = $name . '_month';
+        $day = $name . '_day';
+        $year = $name . '_year';
+
+        if (empty($data->$enabled) || empty($data->$month) || empty($data->$day) || empty($data->$year)) {
+            return null;
+        }
+
+        return mktime(0, 0, 0, (int)$data->$month, (int)$data->$day, (int)$data->$year);
     }
 
     /**
@@ -219,15 +270,17 @@ class request_details_form extends \moodleform {
             if (empty($data['paymentmethod'])) {
                 $errors['paymentmethod'] = get_string('required');
             }
-            if (empty($data['paiddate'])) {
-                $errors['paiddate'] = get_string('required');
+            if (empty($data['paiddate_enabled']) || empty($data['paiddate_month']) ||
+                empty($data['paiddate_day']) || empty($data['paiddate_year'])) {
+                $errors['paiddate_group'] = get_string('required');
             }
         }
 
         // Validate delivery details based on status.
         if ($data['deliverystatus'] !== 'pending') {
-            if (empty($data['deliverydate'])) {
-                $errors['deliverydate'] = get_string('required');
+            if (empty($data['deliverydate_enabled']) || empty($data['deliverydate_month']) ||
+                empty($data['deliverydate_day']) || empty($data['deliverydate_year'])) {
+                $errors['deliverydate_group'] = get_string('required');
             }
         }
 
@@ -241,12 +294,18 @@ class request_details_form extends \moodleform {
         // Validate program completion fields for official transcripts.
         if (isset($data['completionstatus']) && !empty($data['completionstatus'])) {
             // Validate graduation date if status is graduated.
-            if ($data['completionstatus'] === 'graduated' && empty($data['graduationdate'])) {
-                $errors['graduationdate'] = get_string('required');
+            if ($data['completionstatus'] === 'graduated') {
+                if (empty($data['graduationdate_enabled']) || empty($data['graduationdate_month']) ||
+                    empty($data['graduationdate_day']) || empty($data['graduationdate_year'])) {
+                    $errors['graduationdate_group'] = get_string('required');
+                }
             }
             // Validate withdrawn date if status is withdrawn.
-            if ($data['completionstatus'] === 'withdrawn' && empty($data['withdrawndate'])) {
-                $errors['withdrawndate'] = get_string('required');
+            if ($data['completionstatus'] === 'withdrawn') {
+                if (empty($data['withdrawndate_enabled']) || empty($data['withdrawndate_month']) ||
+                    empty($data['withdrawndate_day']) || empty($data['withdrawndate_year'])) {
+                    $errors['withdrawndate_group'] = get_string('required');
+                }
             }
         }
 
