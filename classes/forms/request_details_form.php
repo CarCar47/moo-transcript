@@ -80,8 +80,6 @@ class request_details_form extends \moodleform {
         // Date paid.
         $mform->addElement('date_selector', 'paiddate', get_string('paiddate', 'gradereport_transcript'), ['optional' => true]);
         $mform->addHelpButton('paiddate', 'paiddate', 'gradereport_transcript');
-        $mform->hideIf('paiddate', 'paymentstatus', 'eq', 'free');
-        $mform->hideIf('paiddate', 'paymentstatus', 'eq', 'pending');
 
         // Payment notes.
         $mform->addElement('textarea', 'paymentnotes', get_string('paymentnotes', 'gradereport_transcript'),
@@ -113,13 +111,11 @@ class request_details_form extends \moodleform {
             $mform->addElement('date_selector', 'graduationdate',
                 get_string('graduationdate', 'gradereport_transcript'), ['optional' => true]);
             $mform->addHelpButton('graduationdate', 'graduationdate', 'gradereport_transcript');
-            $mform->hideIf('graduationdate', 'completionstatus', 'neq', 'graduated');
 
             // Withdrawn date (only show if status is withdrawn).
             $mform->addElement('date_selector', 'withdrawndate',
                 get_string('withdrawndate', 'gradereport_transcript'), ['optional' => true]);
             $mform->addHelpButton('withdrawndate', 'withdrawndate', 'gradereport_transcript');
-            $mform->hideIf('withdrawndate', 'completionstatus', 'neq', 'withdrawn');
         }
 
         // Delivery Information Section.
@@ -138,7 +134,6 @@ class request_details_form extends \moodleform {
         // Delivery date.
         $mform->addElement('date_selector', 'deliverydate', get_string('deliverydate', 'gradereport_transcript'), ['optional' => true]);
         $mform->addHelpButton('deliverydate', 'deliverydate', 'gradereport_transcript');
-        $mform->hideIf('deliverydate', 'deliverystatus', 'eq', 'pending');
 
         // Tracking number (for postal delivery only).
         $mform->addElement('text', 'trackingnumber', get_string('trackingnumber', 'gradereport_transcript'), ['size' => 40]);
