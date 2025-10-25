@@ -254,5 +254,24 @@
         <INDEX NAME="school_sort" UNIQUE="false" FIELDS="schoolid, sortorder"/>
       </INDEXES>
     </TABLE>
+
+    <!-- Academic policies table (v1.0.28) -->
+    <TABLE NAME="gradereport_transcript_policies" COMMENT="Stores customizable academic policy text per school">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="schoolid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Reference to school"/>
+        <FIELD NAME="policytype" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false" COMMENT="Policy type: course_numbering, transfer_credit"/>
+        <FIELD NAME="content" TYPE="text" NOTNULL="true" SEQUENCE="false" COMMENT="Custom policy text content"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="schoolid" TYPE="foreign" FIELDS="schoolid" REFTABLE="gradereport_transcript_schools" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="school_policy" UNIQUE="true" FIELDS="schoolid, policytype"/>
+      </INDEXES>
+    </TABLE>
   </TABLES>
 </XMLDB>

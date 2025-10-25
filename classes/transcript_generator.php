@@ -1339,14 +1339,34 @@ class gradereport_transcript_generator {
         $pdf->SetFont('helvetica', 'B', 10);
         $pdf->Cell(0, 7, 'COURSE NUMBERING SYSTEM', 0, 1, 'L');
         $pdf->SetFont('helvetica', '', 9);
-        $pdf->MultiCell(0, 5, 'Courses are identified by a program code followed by a course number (e.g., FSP-201). The program code represents the subject area or program of study, and the course number indicates the level and sequence of the course within that program.', 0, 'L');
+
+        // Load custom policy or use default text.
+        $coursenumberingpolicy = $DB->get_field('gradereport_transcript_policies',
+            'content', ['schoolid' => $this->school->id, 'policytype' => 'course_numbering']);
+
+        if (empty($coursenumberingpolicy)) {
+            // Default text.
+            $coursenumberingpolicy = 'Courses are identified by a program code followed by a course number (e.g., FSP-201). The program code represents the subject area or program of study, and the course number indicates the level and sequence of the course within that program.';
+        }
+
+        $pdf->MultiCell(0, 5, $coursenumberingpolicy, 0, 'L');
         $pdf->Ln(3);
 
         // Section 5: Transfer Credit Policy
         $pdf->SetFont('helvetica', 'B', 10);
         $pdf->Cell(0, 7, 'TRANSFER CREDIT POLICY', 0, 1, 'L');
         $pdf->SetFont('helvetica', '', 9);
-        $pdf->MultiCell(0, 5, 'The acceptance and applicability of transfer credits and hours is subject to the sole discretion of the receiving institution. This institution makes no guarantee regarding the transferability of credits earned here to other institutions. Students are advised to consult with the receiving institution regarding their specific transfer credit policies before enrolling.', 0, 'L');
+
+        // Load custom policy or use default text.
+        $transfercreditpolicy = $DB->get_field('gradereport_transcript_policies',
+            'content', ['schoolid' => $this->school->id, 'policytype' => 'transfer_credit']);
+
+        if (empty($transfercreditpolicy)) {
+            // Default text.
+            $transfercreditpolicy = 'The acceptance and applicability of transfer credits and hours is subject to the sole discretion of the receiving institution. This institution makes no guarantee regarding the transferability of credits earned here to other institutions. Students are advised to consult with the receiving institution regarding their specific transfer credit policies before enrolling.';
+        }
+
+        $pdf->MultiCell(0, 5, $transfercreditpolicy, 0, 'L');
         $pdf->Ln(5);
 
         // v1.0.20: Section 6: Transcript Verification (moved from Page 1)

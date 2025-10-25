@@ -452,6 +452,35 @@ function xmldb_gradereport_transcript_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2025102520, 'gradereport', 'transcript');
     }
 
+    // Upgrade to version 2025102522 - Add policies table for customizable academic policy text.
+    if ($oldversion < 2025102522) {
+        // Define table gradereport_transcript_policies to be created.
+        $table = new xmldb_table('gradereport_transcript_policies');
+
+        // Adding fields to table gradereport_transcript_policies.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('schoolid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('policytype', XMLDB_TYPE_CHAR, '50', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('content', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+
+        // Adding keys to table gradereport_transcript_policies.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('schoolid', XMLDB_KEY_FOREIGN, ['schoolid'], 'gradereport_transcript_schools', ['id']);
+
+        // Adding indexes to table gradereport_transcript_policies.
+        $table->add_index('school_policy', XMLDB_INDEX_UNIQUE, ['schoolid', 'policytype']);
+
+        // Conditionally launch create table for gradereport_transcript_policies.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Transcript savepoint reached.
+        upgrade_plugin_savepoint(true, 2025102522, 'gradereport', 'transcript');
+    }
+
     return true;
 }
 

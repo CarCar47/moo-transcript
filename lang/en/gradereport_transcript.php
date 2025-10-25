@@ -677,6 +677,16 @@ $string['transfercreditupdated'] = 'Transfer credit updated successfully.';
 $string['transfercreditdeleted'] = 'Transfer credit deleted successfully.';
 $string['deletetransfercreditconfirm'] = 'Are you sure you want to delete this transfer credit: {$a}?';
 $string['notransfercredits'] = 'No transfer credits have been added for this student.';
+
+// Academic policies (v1.0.28)
+$string['managepolicies'] = 'Manage Academic Policies';
+$string['coursenumberingsystem'] = 'Course Numbering System';
+$string['transfercreditpolicy'] = 'Transfer Credit Policy';
+$string['policiesdescription'] = 'Customize the academic policy text that appears on page 2 of official transcripts. Leave blank or reset to use default text.';
+$string['policiessaved'] = 'Academic policies saved successfully.';
+$string['policiesreset'] = 'Academic policies reset to defaults.';
+$string['resettodefaults'] = 'Reset to Defaults';
+$string['resetconfirm'] = 'Are you sure you want to reset all policies to their default text?';
 $string['coursecode'] = 'Course Code';
 $string['coursecode_help'] = 'The course code from the originating institution (e.g., ENG-101).';
 $string['institution'] = 'Originating Institution';
