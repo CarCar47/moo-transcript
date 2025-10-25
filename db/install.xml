@@ -167,7 +167,10 @@
         <FIELD NAME="coursename" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Transfer course name"/>
         <FIELD NAME="grade" TYPE="char" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Letter grade earned"/>
         <FIELD NAME="credits" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="false" SEQUENCE="false" DEFAULT="0" COMMENT="Credits for credit-based programs"/>
-        <FIELD NAME="hours" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="false" SEQUENCE="false" DEFAULT="0" COMMENT="Hours for hour-based programs"/>
+        <FIELD NAME="hours" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="false" SEQUENCE="false" DEFAULT="0" COMMENT="Total hours for hour-based programs"/>
+        <FIELD NAME="theoryhours" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="false" SEQUENCE="false" DEFAULT="0" COMMENT="Theory hours for hour-based programs"/>
+        <FIELD NAME="labhours" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="false" SEQUENCE="false" DEFAULT="0" COMMENT="Lab hours for hour-based programs"/>
+        <FIELD NAME="clinicalhours" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="false" SEQUENCE="false" DEFAULT="0" COMMENT="Clinical hours for hour-based programs"/>
         <FIELD NAME="transfersymbol" TYPE="char" LENGTH="10" NOTNULL="false" DEFAULT="T" SEQUENCE="false" COMMENT="Transfer symbol/notation"/>
         <FIELD NAME="institution" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="Originating institution name"/>
         <FIELD NAME="sortorder" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Display order on transcript"/>
@@ -190,9 +193,10 @@
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="schoolid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Reference to school"/>
         <FIELD NAME="lettergrade" TYPE="char" LENGTH="5" NOTNULL="true" SEQUENCE="false" COMMENT="Letter grade (A, B, C, etc.)"/>
-        <FIELD NAME="minpercentage" TYPE="number" LENGTH="5" DECIMALS="2" NOTNULL="false" SEQUENCE="false" DEFAULT="0" COMMENT="Minimum percentage for this grade"/>
-        <FIELD NAME="maxpercentage" TYPE="number" LENGTH="5" DECIMALS="2" NOTNULL="false" SEQUENCE="false" DEFAULT="0" COMMENT="Maximum percentage for this grade"/>
-        <FIELD NAME="gradepoints" TYPE="number" LENGTH="3" DECIMALS="2" NOTNULL="false" SEQUENCE="false" DEFAULT="0" COMMENT="GPA points (e.g., 4.0, 3.0)"/>
+        <FIELD NAME="minpercentage" TYPE="number" LENGTH="5" DECIMALS="2" NOTNULL="false" SEQUENCE="false" COMMENT="Minimum percentage for this grade (NULL for N/A)"/>
+        <FIELD NAME="maxpercentage" TYPE="number" LENGTH="5" DECIMALS="2" NOTNULL="false" SEQUENCE="false" COMMENT="Maximum percentage for this grade (NULL for N/A)"/>
+        <FIELD NAME="gradepoints" TYPE="number" LENGTH="3" DECIMALS="2" NOTNULL="false" SEQUENCE="false" COMMENT="GPA points (e.g., 4.0, 3.0) (NULL for N/A)"/>
+        <FIELD NAME="excludefromgpa" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Exclude from GPA calculation (1=yes, 0=no) - AACRAO standard for P/W/I/CR grades"/>
         <FIELD NAME="quality" TYPE="char" LENGTH="50" NOTNULL="false" SEQUENCE="false" COMMENT="Quality descriptor (e.g., Excellent, Good)"/>
         <FIELD NAME="sortorder" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Display order"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
@@ -204,6 +208,30 @@
       </KEYS>
       <INDEXES>
         <INDEX NAME="school_sort" UNIQUE="false" FIELDS="schoolid, sortorder"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- Course equivalency mapping table (v1.0.17) -->
+    <TABLE NAME="gradereport_transcript_equivalency" COMMENT="Maps transfer credits to institutional course equivalents">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="transferid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Reference to transfer credit record"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Institutional course ID that is replaced"/>
+        <FIELD NAME="programid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Program ID"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="User ID"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="transferid" TYPE="foreign" FIELDS="transferid" REFTABLE="gradereport_transcript_transfer" REFFIELDS="id"/>
+        <KEY NAME="courseid" TYPE="foreign" FIELDS="courseid" REFTABLE="course" REFFIELDS="id"/>
+        <KEY NAME="programid" TYPE="foreign" FIELDS="programid" REFTABLE="gradereport_transcript_programs" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userid" UNIQUE="false" FIELDS="userid"/>
+        <INDEX NAME="user_program" UNIQUE="false" FIELDS="userid, programid"/>
+        <INDEX NAME="transfer_course" UNIQUE="true" FIELDS="transferid, courseid"/>
       </INDEXES>
     </TABLE>
 

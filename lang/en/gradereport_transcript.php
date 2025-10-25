@@ -218,6 +218,8 @@ $string['theoryhours'] = 'Theory Hours';
 $string['theoryhours_help'] = 'Number of classroom/lecture hours for this course.';
 $string['labhours'] = 'Lab Hours';
 $string['labhours_help'] = 'Number of hands-on/practical hours for this course.';
+$string['clinicalhours'] = 'Clinical Hours';
+$string['clinicalhours_help'] = 'Number of clinical/externship hours for this course.';
 $string['credits'] = 'Credits';
 $string['credits_help'] = 'Number of semester credits for this course (e.g., 3.0 for a 3-credit course).';
 $string['ceuvalue'] = 'CEU Value';
@@ -279,6 +281,10 @@ $string['totalhours'] = 'Total Hours';
 $string['totalcredits'] = 'Total Credits';
 $string['totalceu'] = 'Total CEUs';
 $string['coursesandhours'] = 'Courses and Hours';
+$string['transfercredits'] = 'TRANSFER CREDITS';
+$string['transfercreditsfrom'] = 'From:';
+$string['totaltransfercredits'] = 'TOTAL TRANSFER CREDITS';
+$string['institutionalcoursesandhours'] = 'INSTITUTIONAL COURSES AND HOURS';
 $string['coursesandgrades'] = 'Courses and Grades';
 $string['continuingeducationunits'] = 'Continuing Education Units';
 
@@ -369,6 +375,9 @@ $string['transcriptunofficial'] = 'Unofficial Transcript';
 $string['verificationinstructions'] = 'Enter the verification code found on the transcript to verify its authenticity. The code format is TXN- followed by 12 alphanumeric characters.';
 $string['scantoverify'] = 'Scan to verify';
 $string['verificationqrcode'] = 'Verification QR Code';
+$string['transcriptverification'] = 'TRANSCRIPT VERIFICATION';
+$string['verificationinstructionsurl'] = 'To verify the authenticity of this transcript, visit:';
+$string['enterverificationcode'] = 'Enter Verification Code:';
 
 // Request/Payment system strings (Phase 6.1).
 $string['requesttranscript'] = 'Request Transcript';
@@ -680,10 +689,22 @@ $string['transfercredits'] = 'Transfer Credits';
 $string['transferhours'] = 'Transfer Hours';
 $string['transfercredits_help'] = 'Number of credits for this transfer course.';
 $string['transferhours_help'] = 'Total hours for this transfer course.';
+$string['transfertheorhours'] = 'Theory Hours';
+$string['transfertheorhours_help'] = 'Theory hours for this transfer course.';
+$string['transferlabhours'] = 'Lab Hours';
+$string['transferlabhours_help'] = 'Lab hours for this transfer course.';
+$string['transferclinicalhours'] = 'Clinical Hours';
+$string['transferclinicalhours_help'] = 'Clinical hours for this transfer course.';
 $string['hours'] = 'Hours';
 $string['backtostudent'] = 'Back to Student Transcripts';
 $string['courseinformation'] = 'Course Information';
 $string['gradeinformation'] = 'Grading Information';
+
+// Course equivalency (v1.0.17 - AACRAO compliance)
+$string['courseequivalency'] = 'Course Equivalency';
+$string['replacescourse'] = 'Replaces Institutional Course';
+$string['replacescourse_help'] = 'Select the institutional course that this transfer credit replaces. When selected, the institutional course will not appear on the transcript (AACRAO standard: credit granted only once for duplicate courses).';
+$string['notransfercourseequivalent'] = 'None (does not replace any course)';
 
 // Grading scale (v1.0.15)
 $string['managegradescale'] = 'Manage Grading Scale';
@@ -696,13 +717,15 @@ $string['gradescaledeleted'] = 'Grade scale row deleted successfully.';
 $string['deletegradescaleconfirm'] = 'Are you sure you want to delete this grade scale row: {$a}?';
 $string['nogradescales'] = 'No grade scale rows have been added. Click "Add Grade Scale Row" to create the grading scale.';
 $string['lettergrade'] = 'Letter Grade';
-$string['lettergrade_help'] = 'The letter grade (e.g., A, B, C, D, F).';
+$string['lettergrade_help'] = 'The letter grade (e.g., A, B, C, D, F, P, W, I, CR).';
+$string['excludefromgpa'] = 'Exclude from GPA';
+$string['excludefromgpa_help'] = 'Check this for non-qualitative grades (P=Pass, W=Withdrawal, I=Incomplete, CR=Credit) that should NOT be included in GPA calculation per AACRAO standards. When checked, percentage and grade point fields are not required.';
 $string['minpercentage'] = 'Minimum Percentage';
-$string['minpercentage_help'] = 'The minimum percentage for this grade (e.g., 90 for an A).';
+$string['minpercentage_help'] = 'The minimum percentage for this grade (e.g., 90 for an A). Leave blank for grades excluded from GPA.';
 $string['maxpercentage'] = 'Maximum Percentage';
-$string['maxpercentage_help'] = 'The maximum percentage for this grade (e.g., 100 for an A).';
+$string['maxpercentage_help'] = 'The maximum percentage for this grade (e.g., 100 for an A). Leave blank for grades excluded from GPA.';
 $string['gradepoints'] = 'Grade Points';
-$string['gradepoints_help'] = 'The GPA points for this grade (e.g., 4.0 for an A).';
+$string['gradepoints_help'] = 'The GPA points for this grade (e.g., 4.0 for an A). Leave blank for grades excluded from GPA.';
 $string['quality'] = 'Quality Descriptor';
 $string['quality_help'] = 'The quality descriptor for this grade (e.g., Excellent, Good, Satisfactory).';
 $string['percentagerange'] = 'Percentage Range';

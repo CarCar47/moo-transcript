@@ -28,6 +28,7 @@ require_once($CFG->libdir . '/pdflib.php');
 require_once($CFG->libdir . '/gradelib.php');
 require_once($CFG->dirroot . '/grade/lib.php');
 require_once($CFG->dirroot . '/grade/querylib.php');
+// Note: transcript_pdf class is autoloaded from classes/ directory.
 
 /**
  * Transcript generator class
@@ -219,10 +220,13 @@ class gradereport_transcript_generator {
 
         $coursedata = [];
         foreach ($transfers as $transfer) {
-            // Format grade with transfer symbol (e.g., "A T").
+            // Format grade with transfer symbol (e.g., "B(T)").
             $gradeletter = trim($transfer->grade);
-            if (!empty($transfer->transfersymbol)) {
-                $gradeletter .= ' ' . $transfer->transfersymbol;
+            if (!empty($gradeletter) && !empty($transfer->transfersymbol)) {
+                $gradeletter .= '(' . trim($transfer->transfersymbol) . ')';
+            } else if (empty($gradeletter) && !empty($transfer->transfersymbol)) {
+                // If no grade, just show transfer symbol.
+                $gradeletter = trim($transfer->transfersymbol);
             }
 
             $coursedata[] = (object)[
@@ -250,6 +254,7 @@ class gradereport_transcript_generator {
      * locked grades, and automatically recalculates stale grades.
      *
      * Now includes transfer credits FIRST, followed by institutional courses.
+     * AACRAO v1.0.17: Excludes institutional courses replaced by transfer credits.
      *
      * @return array Array of course data with grades (transfer + institutional)
      */
@@ -263,6 +268,14 @@ class gradereport_transcript_generator {
             // Get transfer credits FIRST.
             $transfercredits = $this->get_transfer_credits();
 
+            // Build list of institutional courses replaced by transfer credits (AACRAO compliance).
+            $replacedcourses = [];
+            $equivalencies = $DB->get_records('gradereport_transcript_equivalency',
+                ['programid' => $this->programid, 'userid' => $this->userid], '', 'courseid, transferid');
+            foreach ($equivalencies as $equiv) {
+                $replacedcourses[$equiv->courseid] = true;
+            }
+
             // Get institutional courses.
             $mappings = $this->get_course_mappings();
             $coursedata = [];
@@ -272,6 +285,11 @@ class gradereport_transcript_generator {
 
                 if (!$course) {
                     continue; // Skip if course doesn't exist.
+                }
+
+                // AACRAO compliance: Skip courses replaced by transfer credits.
+                if (isset($replacedcourses[$course->id])) {
+                    continue; // This course is replaced by a transfer credit - don't show duplicate.
                 }
 
                 $gradevalue = null;
@@ -355,21 +373,26 @@ class gradereport_transcript_generator {
      * @return mixed PDF output or string
      */
     public function generate_pdf($outputmode = 'D', $official = false) {
-        // Create PDF instance.
-        $pdf = new pdf('P', 'mm', 'A4', true, 'UTF-8', false);
+        // Create custom PDF instance with header/footer support (v1.0.21).
+        $pdf = new gradereport_transcript_pdf('P', 'mm', 'A4', true, 'UTF-8', false);
+
+        // Set PDF properties for header/footer.
+        $pdf->school = $this->school;
+        $pdf->official = $official;
+        $pdf->generator = $this;
 
         // Set document information.
         $pdf->SetCreator('Moodle - Academic Transcripts Plugin');
         $pdf->SetAuthor($this->school->name);
         $pdf->SetTitle('Academic Transcript - ' . fullname($this->user));
 
-        // Disable header and footer.
-        $pdf->setPrintHeader(false);
-        $pdf->setPrintFooter(false);
+        // Set margins (v1.0.21: 30mm top for header, 20mm bottom for footer+page numbers).
+        $pdf->SetMargins(15, 30, 15);
+        $pdf->SetAutoPageBreak(true, 20);
 
-        // Set margins.
-        $pdf->SetMargins(15, 15, 15);
-        $pdf->SetAutoPageBreak(true, 15);
+        // Enable header and footer printing.
+        $pdf->setPrintHeader(true);
+        $pdf->setPrintFooter(true);
 
         // Add page.
         $pdf->AddPage();
@@ -418,10 +441,8 @@ class gradereport_transcript_generator {
         // Footer with verification.
         $this->add_footer($pdf, $official);
 
-        // Academic information page (page 2) - only for official transcripts.
-        if ($official) {
-            $this->add_academic_info_page($pdf);
-        }
+        // Academic information page (page 2) - shows grading scale for all transcripts.
+        $this->add_academic_info_page($pdf);
     }
 
     /**
@@ -446,10 +467,8 @@ class gradereport_transcript_generator {
         // Footer with verification.
         $this->add_footer($pdf, $official);
 
-        // Academic information page (page 2) - only for official transcripts.
-        if ($official) {
-            $this->add_academic_info_page($pdf);
-        }
+        // Academic information page (page 2) - shows grading scale for all transcripts.
+        $this->add_academic_info_page($pdf);
     }
 
     /**
@@ -474,79 +493,20 @@ class gradereport_transcript_generator {
         // Footer with verification.
         $this->add_footer($pdf, $official);
 
-        // Academic information page (page 2) - only for official transcripts.
-        if ($official) {
-            $this->add_academic_info_page($pdf);
-        }
+        // Academic information page (page 2) - shows grading scale for all transcripts.
+        $this->add_academic_info_page($pdf);
     }
 
     /**
-     * Add header section to PDF
+     * Add header section to PDF (v1.0.20: now handled by callback)
      *
      * @param pdf $pdf PDF object
      * @param bool $official Whether this is official
      */
     protected function add_header($pdf, $official) {
-        // Add school logo at top-left (if available).
-        // Position: X=15mm (left margin), Y=15mm (top margin)
-        // Maximum size: 20mm width × 12mm height (letterhead standard)
-        $logoinfo = $this->get_school_logo_path();
-        if ($logoinfo !== null) {
-            // Save current Y position before adding logo.
-            $currenty = $pdf->GetY();
-
-            // Calculate constrained dimensions for 20mm × 12mm max box (letterhead standard).
-            // This uses manual aspect ratio calculation because TCPDF's fitbox
-            // parameter is unreliable (confirmed bug - only works 79% of time).
-            // By calculating which dimension to constrain and setting the other to 0,
-            // we GUARANTEE the logo never exceeds the max box size.
-            $dims = $this->calculate_logo_dimensions(
-                $logoinfo['width'],   // Image width in pixels
-                $logoinfo['height'],  // Image height in pixels
-                20,                   // Max width in mm (letterhead standard)
-                12                    // Max height in mm (letterhead standard)
-            );
-
-            // Add logo with calculated dimensions (one will be 0 for auto-calculate).
-            // TCPDF reliably calculates the 0 dimension proportionally.
-            // This GUARANTEES logo fits within 20×12mm box with perfect aspect ratio.
-            $pdf->Image($logoinfo['path'], 15, 15, $dims['width'], $dims['height']);
-
-            // Reset Y position to continue with centered school name.
-            // This ensures the school name remains centered and not affected by logo.
-            $pdf->SetY($currenty);
-        }
-
-        // School name (centered, not affected by logo positioning).
-        $pdf->SetFont('helvetica', 'B', 16);
-        $pdf->Cell(0, 10, $this->school->name, 0, 1, 'C');
-
-        // School address.
-        if (!empty($this->school->address)) {
-            $pdf->SetFont('helvetica', '', 10);
-            $pdf->Cell(0, 5, $this->school->address, 0, 1, 'C');
-        }
-
-        // School contact.
-        if (!empty($this->school->phone) || !empty($this->school->website)) {
-            $pdf->SetFont('helvetica', '', 10);
-            $contact = [];
-            if (!empty($this->school->phone)) {
-                $contact[] = 'Phone: ' . $this->school->phone;
-            }
-            if (!empty($this->school->website)) {
-                $contact[] = 'Web: ' . $this->school->website;
-            }
-            $pdf->Cell(0, 5, implode(' | ', $contact), 0, 1, 'C');
-        }
-
-        // Document title.
-        $pdf->Ln(5);
-        $pdf->SetFont('helvetica', 'B', 14);
-        $title = $official ? 'OFFICIAL TRANSCRIPT' : 'UNOFFICIAL TRANSCRIPT';
-        $pdf->Cell(0, 10, $title, 0, 1, 'C');
-
-        $pdf->Ln(5);
+        // v1.0.20: Header is now added to all pages via callback.
+        // This method only adds spacing on page 1.
+        $pdf->Ln(2);
     }
 
     /**
@@ -622,6 +582,170 @@ class gradereport_transcript_generator {
     }
 
     /**
+     * Add transfer credits section (v1.0.19)
+     *
+     * Displays transfer credits in a separate section before institutional courses,
+     * grouped by originating institution. Follows industry standards (UC system, major universities).
+     *
+     * @param pdf $pdf PDF object
+     * @param array $transfercredits Array of transfer credit course data
+     * @return array Transfer credit totals [hour1, hour2, hour3, total]
+     */
+    protected function add_transfer_credits_section($pdf, $transfercredits) {
+        if (empty($transfercredits)) {
+            return ['hour1' => 0, 'hour2' => 0, 'hour3' => 0, 'total' => 0]; // No transfer credits to display.
+        }
+
+        global $DB;
+
+        // Section header.
+        $pdf->SetFont('helvetica', 'B', 10);
+        $pdf->Cell(0, 7, get_string('transfercredits', 'gradereport_transcript'), 0, 1, 'L');
+        $pdf->Ln(2);
+
+        // Group transfer credits by institution.
+        $byinstitution = [];
+        foreach ($transfercredits as $credit) {
+            $institution = $credit->mapping->institution ?? 'Unknown Institution';
+            if (!isset($byinstitution[$institution])) {
+                $byinstitution[$institution] = [];
+            }
+            $byinstitution[$institution][] = $credit;
+        }
+
+        // Determine which hour columns to show.
+        $showhour1 = !empty(trim($this->program->hour1label));
+        $showhour2 = !empty(trim($this->program->hour2label));
+        $showhour3 = !empty(trim($this->program->hour3label));
+
+        // Track totals across ALL institutions for transfer credits.
+        $totaltransferhour1 = 0;
+        $totaltransferhour2 = 0;
+        $totaltransferhour3 = 0;
+        $totaltransfer = 0;
+
+        // Display each institution's credits.
+        foreach ($byinstitution as $institution => $credits) {
+            // Institution name.
+            $pdf->SetFont('helvetica', 'B', 9);
+            $pdf->Cell(20, 5, get_string('transfercreditsfrom', 'gradereport_transcript'), 0, 0, 'L');
+            $pdf->SetFont('helvetica', '', 9);
+            $pdf->Cell(0, 5, $institution, 0, 1, 'L');
+            $pdf->Ln(1);
+
+            // Build HTML table.
+            $html = '<table border="1" cellpadding="4" cellspacing="0" style="font-size:9pt;">';
+
+            // Header row.
+            $html .= '<tr style="background-color:#CCCCCC;font-weight:bold;">';
+            $html .= '<th width="45%" align="left">Course</th>';
+            $html .= '<th width="10%" align="center">Grade</th>';
+
+            if ($showhour1) {
+                $html .= '<th width="12%" align="center">' . htmlspecialchars($this->program->hour1label) . '</th>';
+            }
+            if ($showhour2) {
+                $html .= '<th width="12%" align="center">' . htmlspecialchars($this->program->hour2label) . '</th>';
+            }
+            if ($showhour3) {
+                $html .= '<th width="12%" align="center">' . htmlspecialchars($this->program->hour3label) . '</th>';
+            }
+
+            $html .= '<th width="15%" align="center">Total Hours</th>';
+            $html .= '</tr>';
+
+            // Data rows.
+            $totalhour1 = 0;
+            $totalhour2 = 0;
+            $totalhour3 = 0;
+            $grandtotal = 0;
+
+            foreach ($credits as $coursedata) {
+                $mapping = $coursedata->mapping;
+                $course = $coursedata->course;
+
+                // Transfer credit: check if detailed hour breakdown is available.
+                $hour1 = $mapping->theoryhours ?? 0.0;
+                $hour2 = $mapping->labhours ?? 0.0;
+                $hour3 = $mapping->clinicalhours ?? 0.0;
+
+                // If detailed breakdown exists, use it. Otherwise use single hours field.
+                if ($hour1 > 0 || $hour2 > 0 || $hour3 > 0) {
+                    $rowtotal = $hour1 + $hour2 + $hour3;
+                } else {
+                    // Legacy: single hours field only.
+                    $rowtotal = $mapping->hours ?? 0.0;
+                    $hour1 = 0.0;
+                    $hour2 = 0.0;
+                    $hour3 = 0.0;
+                }
+
+                $coursename = htmlspecialchars($course->shortname . ' - ' . $course->fullname);
+
+                $html .= '<tr>';
+                $html .= '<td align="left">' . $coursename . '</td>';
+                $html .= '<td align="center">' . ($coursedata->gradeletter ?? 'N/A') . '</td>';
+
+                if ($showhour1) {
+                    $html .= '<td align="center">' . number_format($hour1, 1) . '</td>';
+                    $totalhour1 += $hour1;
+                }
+                if ($showhour2) {
+                    $html .= '<td align="center">' . number_format($hour2, 1) . '</td>';
+                    $totalhour2 += $hour2;
+                }
+                if ($showhour3) {
+                    $html .= '<td align="center">' . number_format($hour3, 1) . '</td>';
+                    $totalhour3 += $hour3;
+                }
+
+                $html .= '<td align="center">' . number_format($rowtotal, 1) . '</td>';
+                $html .= '</tr>';
+
+                $grandtotal += $rowtotal;
+            }
+
+            // Add this institution's totals to the overall transfer totals.
+            $totaltransferhour1 += $totalhour1;
+            $totaltransferhour2 += $totalhour2;
+            $totaltransferhour3 += $totalhour3;
+            $totaltransfer += $grandtotal;
+
+            // Totals row for this institution.
+            $html .= '<tr style="font-weight:bold;">';
+            $html .= '<td align="right">' . get_string('totaltransfercredits', 'gradereport_transcript') . '</td>';
+            $html .= '<td align="center"></td>';
+
+            if ($showhour1) {
+                $html .= '<td align="center">' . number_format($totalhour1, 1) . '</td>';
+            }
+            if ($showhour2) {
+                $html .= '<td align="center">' . number_format($totalhour2, 1) . '</td>';
+            }
+            if ($showhour3) {
+                $html .= '<td align="center">' . number_format($totalhour3, 1) . '</td>';
+            }
+
+            $html .= '<td align="center">' . number_format($grandtotal, 1) . '</td>';
+            $html .= '</tr>';
+            $html .= '</table>';
+
+            // Write HTML table.
+            $pdf->writeHTML($html, true, false, true, false, '');
+
+            $pdf->Ln(5);
+        }
+
+        // Return transfer credit totals for use in grand total calculation.
+        return [
+            'hour1' => $totaltransferhour1,
+            'hour2' => $totaltransferhour2,
+            'hour3' => $totaltransferhour3,
+            'total' => $totaltransfer
+        ];
+    }
+
+    /**
      * Add hour-based courses table
      *
      * @param pdf $pdf PDF object
@@ -629,9 +753,24 @@ class gradereport_transcript_generator {
     protected function add_hourbased_courses_table($pdf) {
         $grades = $this->get_student_grades();
 
-        // Table header.
+        // Separate transfer credits from institutional courses (v1.0.19).
+        $transfercredits = [];
+        $institutionalcourses = [];
+
+        foreach ($grades as $coursedata) {
+            if (isset($coursedata->istransfer) && $coursedata->istransfer === true) {
+                $transfercredits[] = $coursedata;
+            } else {
+                $institutionalcourses[] = $coursedata;
+            }
+        }
+
+        // Display transfer credits section first (if any) and capture totals.
+        $transfertotals = $this->add_transfer_credits_section($pdf, $transfercredits);
+
+        // Table header for institutional courses.
         $pdf->SetFont('helvetica', 'B', 10);
-        $pdf->Cell(0, 7, 'COURSES AND HOURS', 0, 1, 'L');
+        $pdf->Cell(0, 7, get_string('institutionalcoursesandhours', 'gradereport_transcript'), 0, 1, 'L');
 
         // Determine which hour columns to show.
         $showhour1 = !empty(trim($this->program->hour1label));
@@ -659,17 +798,21 @@ class gradereport_transcript_generator {
         $html .= '<th width="15%" align="center">Total Hours</th>';
         $html .= '</tr>';
 
-        // Data rows.
+        // Data rows (institutional courses only - transfer credits shown in separate section).
         $totalhour1 = 0;
         $totalhour2 = 0;
         $totalhour3 = 0;
         $grandtotal = 0;
 
-        foreach ($grades as $coursedata) {
+        foreach ($institutionalcourses as $coursedata) {
             $mapping = $coursedata->mapping;
             $course = $coursedata->course;
 
-            $rowtotal = $mapping->theoryhours + $mapping->labhours + $mapping->clinicalhours;
+            // Institutional course: use detailed hour breakdown.
+            $hour1 = $mapping->theoryhours ?? 0.0;
+            $hour2 = $mapping->labhours ?? 0.0;
+            $hour3 = $mapping->clinicalhours ?? 0.0;
+            $rowtotal = $hour1 + $hour2 + $hour3;
 
             $coursename = htmlspecialchars($course->shortname . ' - ' . $course->fullname);
 
@@ -678,16 +821,16 @@ class gradereport_transcript_generator {
             $html .= '<td align="center">' . ($coursedata->gradeletter ?? 'N/A') . '</td>';
 
             if ($showhour1) {
-                $html .= '<td align="center">' . number_format($mapping->theoryhours, 1) . '</td>';
-                $totalhour1 += $mapping->theoryhours;
+                $html .= '<td align="center">' . number_format($hour1, 1) . '</td>';
+                $totalhour1 += $hour1;
             }
             if ($showhour2) {
-                $html .= '<td align="center">' . number_format($mapping->labhours, 1) . '</td>';
-                $totalhour2 += $mapping->labhours;
+                $html .= '<td align="center">' . number_format($hour2, 1) . '</td>';
+                $totalhour2 += $hour2;
             }
             if ($showhour3) {
-                $html .= '<td align="center">' . number_format($mapping->clinicalhours, 1) . '</td>';
-                $totalhour3 += $mapping->clinicalhours;
+                $html .= '<td align="center">' . number_format($hour3, 1) . '</td>';
+                $totalhour3 += $hour3;
             }
 
             $html .= '<td align="center">' . number_format($rowtotal, 1) . '</td>';
@@ -696,7 +839,7 @@ class gradereport_transcript_generator {
             $grandtotal += $rowtotal;
         }
 
-        // Totals row.
+        // Totals row (institutional courses only).
         $html .= '<tr style="font-weight:bold;">';
         $html .= '<td align="right">TOTAL</td>';
         $html .= '<td align="center"></td>';
@@ -713,10 +856,41 @@ class gradereport_transcript_generator {
 
         $html .= '<td align="center">' . number_format($grandtotal, 1) . '</td>';
         $html .= '</tr>';
+
+        // Add GRAND TOTAL row if transfer credits exist (v1.0.24).
+        if ($transfertotals['total'] > 0) {
+            $html .= '<tr style="font-weight:bold;background-color:#EEEEEE;">';
+            $html .= '<td align="right">GRAND TOTAL (Including Transfer Credits)</td>';
+            $html .= '<td align="center"></td>';
+
+            if ($showhour1) {
+                $html .= '<td align="center">' . number_format($totalhour1 + $transfertotals['hour1'], 1) . '</td>';
+            }
+            if ($showhour2) {
+                $html .= '<td align="center">' . number_format($totalhour2 + $transfertotals['hour2'], 1) . '</td>';
+            }
+            if ($showhour3) {
+                $html .= '<td align="center">' . number_format($totalhour3 + $transfertotals['hour3'], 1) . '</td>';
+            }
+
+            $html .= '<td align="center">' . number_format($grandtotal + $transfertotals['total'], 1) . '</td>';
+            $html .= '</tr>';
+        }
+
         $html .= '</table>';
 
         // Write HTML table.
         $pdf->writeHTML($html, true, false, true, false, '');
+
+        $pdf->Ln(3);
+
+        // Calculate GPA (using school's custom scale).
+        $gpa = $this->gradecalculator->calculate_weighted_gpa($grades, 'hours', $this->school->id);
+
+        // GPA row.
+        $pdf->SetFont('helvetica', 'B', 10);
+        $pdf->Cell(90, 6, 'CUMULATIVE GPA:', 0, 0, 'R');
+        $pdf->Cell(20, 6, number_format($gpa, 2), 0, 1, 'L');
 
         $pdf->Ln(5);
     }
@@ -944,21 +1118,7 @@ class gradereport_transcript_generator {
             if ($showsignature) {
                 $pdf->Ln(5);
 
-                // Signature and seal side-by-side (2-column layout for compactness).
-                $pdf->SetFont('helvetica', '', 8);
-
-                // Left column: Signature area.
-                $y = $pdf->GetY();
-                $pdf->SetXY(15, $y);
-                $pdf->Cell(85, 4, '___________________________________', 0, 1, 'L');
-                $pdf->SetX(15);
-                $pdf->Cell(85, 4, 'Authorized Signature', 0, 0, 'L');
-
-                // Right column: Seal area.
-                $pdf->SetXY(105, $y);
-                $pdf->Cell(85, 4, 'Official Seal/Stamp:', 0, 1, 'C');
-                $pdf->SetXY(115, $y + 6);
-                $pdf->Cell(65, 15, '', 1, 0, 'C'); // Seal box (15mm height).
+                // v1.0.20: Removed signature/seal footer (QR code provides verification).
             }
         } else {
             $pdf->SetFont('helvetica', 'I', 9);
@@ -973,7 +1133,7 @@ class gradereport_transcript_generator {
      * The QR code contains a URL to the public verification page.
      *
      * Uses TCPDF's built-in 2D barcode support for QR code generation.
-     * Positioned to fit on page 2 without creating extra pages.
+     * v1.0.25: Calculates total space needed including label to prevent page break.
      *
      * @param pdf $pdf PDF object
      */
@@ -987,14 +1147,32 @@ class gradereport_transcript_generator {
         // Create verification URL with absolute path.
         $verifyurl = $CFG->wwwroot . '/grade/report/transcript/verify.php?code=' . $this->verificationcode;
 
-        // Position QR code at bottom right of page 2.
-        // A4 page size: 210mm x 297mm, margins: 15mm
-        // Usable area: 180mm x 267mm (15mm to 195mm horizontal, 15mm to 282mm vertical)
-        // QR size: 25mm x 25mm (smaller to fit better)
-        // Position: Bottom-right corner with 5mm padding from edges
+        // QR size: 25mm x 25mm
         $size = 25;
+
+        // Check remaining space on current page.
+        $currentY = $pdf->GetY();
+        $pageHeight = 297;  // A4 page height in mm
+        $bottomMargin = 15;
+        $remainingSpace = $pageHeight - $bottomMargin - $currentY;
+
+        // Position QR code at bottom-right corner.
         $x = 210 - 15 - $size - 5;  // Right edge - margin - QR size - padding = 165mm
-        $y = 297 - 15 - $size - 8;  // Bottom edge - margin - QR size - label space = 249mm
+
+        // v1.0.25: Calculate total space needed for QR code + label to prevent page break.
+        // QR code: 25mm + gap: 1mm + label: 3mm + padding: 5mm = 34mm total
+        $labelGap = 1;          // Gap between QR and label
+        $labelHeight = 3;       // Label cell height
+        $paddingBottom = 5;     // Bottom padding
+        $totalNeeded = $size + $labelGap + $labelHeight + $paddingBottom;
+
+        if ($remainingSpace >= $totalNeeded) {
+            // Enough space - position at absolute bottom of page
+            $y = $pageHeight - $bottomMargin - $size - 8;
+        } else {
+            // Not enough space - position after current content (prevents new page)
+            $y = $currentY + 5;
+        }
 
         // Add QR code using TCPDF's 2D barcode method.
         $style = [
@@ -1003,6 +1181,11 @@ class gradereport_transcript_generator {
             'fgcolor' => [0, 0, 0],
             'bgcolor' => false
         ];
+
+        // Save current auto-page-break settings and disable to prevent unwanted page breaks.
+        $bMargin = $pdf->getBreakMargin();
+        $auto_page_break = $pdf->getAutoPageBreak();
+        $pdf->SetAutoPageBreak(false, 0);
 
         $pdf->write2DBarcode(
             $verifyurl,              // Absolute URL.
@@ -1019,6 +1202,9 @@ class gradereport_transcript_generator {
         $pdf->SetFont('helvetica', '', 7);
         $pdf->SetXY($x, $y + $size + 1);
         $pdf->Cell($size, 3, get_string('scantoverify', 'gradereport_transcript'), 0, 0, 'C');
+
+        // Restore original auto-page-break settings.
+        $pdf->SetAutoPageBreak($auto_page_break, $bMargin);
     }
 
     /**
@@ -1156,29 +1342,63 @@ class gradereport_transcript_generator {
         $pdf->Cell(0, 7, 'TRANSFER CREDIT POLICY', 0, 1, 'L');
         $pdf->SetFont('helvetica', '', 9);
         $pdf->MultiCell(0, 5, 'The acceptance and applicability of transfer credits and hours is subject to the sole discretion of the receiving institution. This institution makes no guarantee regarding the transferability of credits earned here to other institutions. Students are advised to consult with the receiving institution regarding their specific transfer credit policies before enrolling.', 0, 'L');
+        $pdf->Ln(5);
+
+        // v1.0.20: Section 6: Transcript Verification (moved from Page 1)
+        if (!empty($this->verificationcode)) {
+            global $CFG;
+
+            $pdf->SetFont('helvetica', 'B', 10);
+            $pdf->Cell(0, 7, get_string('transcriptverification', 'gradereport_transcript'), 0, 1, 'L');
+
+            $pdf->SetFont('helvetica', '', 9);
+            $pdf->MultiCell(0, 5, get_string('verificationinstructionsurl', 'gradereport_transcript'), 0, 'L');
+
+            // Verification URL
+            $pdf->SetFont('helvetica', 'U', 9);
+            $pdf->SetTextColor(0, 0, 255);
+            $verifyurl = $CFG->wwwroot . '/grade/report/transcript/verify.php';
+            $pdf->Cell(0, 5, $verifyurl, 0, 1, 'L');
+            $pdf->SetTextColor(0, 0, 0);
+
+            // Verification Code
+            $pdf->SetFont('helvetica', '', 9);
+            $pdf->Cell(0, 5, get_string('enterverificationcode', 'gradereport_transcript') . ' ' . $this->verificationcode, 0, 1, 'L');
+        }
 
         // Add school logo at bottom-left of page 2 (if available).
-        // Position matches QR code vertical position but on left side.
+        // v1.0.24: Position matches QR code vertical position but on left side.
         // Logo: Bottom-left, QR Code: Bottom-right
         $logoinfo = $this->get_school_logo_path();
         if ($logoinfo !== null) {
-            // Position: X=15mm (left margin), Y=249mm (same as QR code vertical position)
             // Maximum size: 25mm width × 25mm height (matches QR code size)
-            // A4 page: 210mm x 297mm, margins: 15mm
-            // QR code is at X=165mm (right), Logo is at X=15mm (left)
+            $logosize = 25;
+
+            // Check remaining space on current page.
+            $currentY = $pdf->GetY();
+            $pageHeight = 297;  // A4 page height in mm
+            $bottomMargin = 15;
+            $remainingSpace = $pageHeight - $bottomMargin - $currentY;
+
+            // v1.0.24: Use relative positioning if sufficient space, otherwise position below current content.
+            if ($remainingSpace >= ($logosize + 10)) {
+                // Enough space - position at absolute bottom of page
+                $logoY = $pageHeight - $bottomMargin - $logosize - 8;
+            } else {
+                // Not enough space - position 5mm below current content (prevents new page)
+                $logoY = $currentY + 5;
+            }
 
             // Calculate constrained dimensions for 25mm × 25mm max box.
-            // Uses manual aspect ratio calculation (fitbox is unreliable).
             $dims = $this->calculate_logo_dimensions(
                 $logoinfo['width'],   // Image width in pixels
                 $logoinfo['height'],  // Image height in pixels
-                25,                   // Max width in mm
-                25                    // Max height in mm
+                $logosize,            // Max width in mm
+                $logosize             // Max height in mm
             );
 
-            // Add logo with calculated dimensions.
-            // GUARANTEES logo fits within 25×25mm box symmetrically with QR code.
-            $pdf->Image($logoinfo['path'], 15, 249, $dims['width'], $dims['height']);
+            // Add logo at left margin with calculated dimensions.
+            $pdf->Image($logoinfo['path'], 15, $logoY, $dims['width'], $dims['height']);
         }
 
         // Add QR code at bottom of page 2 (Phase 7 - Verification System).
@@ -1217,7 +1437,7 @@ class gradereport_transcript_generator {
      *
      * @return array|null Array with 'path', 'width', 'height', or null if no logo exists
      */
-    protected function get_school_logo_path() {
+    public function get_school_logo_path() {
         // Return cached info if already retrieved.
         if ($this->logotemppath !== null) {
             return $this->logotemppath;
@@ -1298,7 +1518,7 @@ class gradereport_transcript_generator {
      * @param float $maxheight Maximum height in mm
      * @return array Array with 'width' and 'height' (one will be 0 for auto-calculate)
      */
-    protected function calculate_logo_dimensions($imagewidth, $imageheight, $maxwidth, $maxheight) {
+    public function calculate_logo_dimensions($imagewidth, $imageheight, $maxwidth, $maxheight) {
         // Calculate aspect ratios.
         $boxratio = $maxwidth / $maxheight;
         $imageratio = $imagewidth / $imageheight;

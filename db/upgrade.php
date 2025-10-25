@@ -341,6 +341,117 @@ function xmldb_gradereport_transcript_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2025102500, 'gradereport', 'transcript');
     }
 
+    // Upgrade to version 2025102510 - Add detailed hour fields to transfer credits.
+    if ($oldversion < 2025102510) {
+
+        // Define table gradereport_transcript_transfer to be updated.
+        $table = new xmldb_table('gradereport_transcript_transfer');
+
+        // Add theoryhours field.
+        $field = new xmldb_field('theoryhours', XMLDB_TYPE_NUMBER, '10, 2', null, null, null, '0', 'hours');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Add labhours field.
+        $field = new xmldb_field('labhours', XMLDB_TYPE_NUMBER, '10, 2', null, null, null, '0', 'theoryhours');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Add clinicalhours field.
+        $field = new xmldb_field('clinicalhours', XMLDB_TYPE_NUMBER, '10, 2', null, null, null, '0', 'labhours');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Transcript savepoint reached.
+        upgrade_plugin_savepoint(true, 2025102510, 'gradereport', 'transcript');
+    }
+
+    // Upgrade to version 2025102511 - Add course equivalency mapping table.
+    if ($oldversion < 2025102511) {
+
+        // Define table gradereport_transcript_equivalency to be created.
+        $table = new xmldb_table('gradereport_transcript_equivalency');
+
+        // Adding fields to table gradereport_transcript_equivalency.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('transferid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('courseid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('programid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+
+        // Adding keys to table gradereport_transcript_equivalency.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('transferid', XMLDB_KEY_FOREIGN, ['transferid'], 'gradereport_transcript_transfer', ['id']);
+        $table->add_key('courseid', XMLDB_KEY_FOREIGN, ['courseid'], 'course', ['id']);
+        $table->add_key('programid', XMLDB_KEY_FOREIGN, ['programid'], 'gradereport_transcript_programs', ['id']);
+
+        // Adding indexes to table gradereport_transcript_equivalency.
+        $table->add_index('userid', XMLDB_INDEX_NOTUNIQUE, ['userid']);
+        $table->add_index('user_program', XMLDB_INDEX_NOTUNIQUE, ['userid', 'programid']);
+        $table->add_index('transfer_course', XMLDB_INDEX_UNIQUE, ['transferid', 'courseid']);
+
+        // Conditionally launch create table for gradereport_transcript_equivalency.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Transcript savepoint reached.
+        upgrade_plugin_savepoint(true, 2025102511, 'gradereport', 'transcript');
+    }
+
+    // Upgrade to version 2025102514 - v1.0.20: Headers, footers, verification section, date format.
+    if ($oldversion < 2025102514) {
+        // No schema changes - only code improvements.
+        // - Removed signature/seal footer section
+        // - Added TCPDF header/footer with school branding and page numbers
+        // - Moved verification code to Page 2 with URL
+        // - Fixed American date format on verification page
+        upgrade_plugin_savepoint(true, 2025102514, 'gradereport', 'transcript');
+    }
+
+    // Upgrade to version 2025102515 - v1.0.21: Fixed TCPDF implementation.
+    if ($oldversion < 2025102515) {
+        // No schema changes - only code improvements.
+        // - Created transcript_pdf.php class extending pdf
+        // - Properly overrode Header() and Footer() methods
+        // - Fixed invalid setHeaderCallback/setFooterCallback usage
+        upgrade_plugin_savepoint(true, 2025102515, 'gradereport', 'transcript');
+    }
+
+    // Upgrade to version 2025102516 - v1.0.22: Fixed method visibility and autoloading.
+    if ($oldversion < 2025102516) {
+        // No schema changes - only code improvements.
+        // - Changed get_school_logo_path() and calculate_logo_dimensions() to public
+        // - Removed manual require for transcript_pdf.php (uses Moodle autoloading)
+        upgrade_plugin_savepoint(true, 2025102516, 'gradereport', 'transcript');
+    }
+
+    // Upgrade to version 2025102520 - Add excludefromgpa column for AACRAO compliance.
+    if ($oldversion < 2025102520) {
+        // Define field excludefromgpa to be added to gradereport_transcript_gradescale.
+        $table = new xmldb_table('gradereport_transcript_gradescale');
+        $field = new xmldb_field('excludefromgpa', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'gradepoints');
+
+        // Conditionally launch add field excludefromgpa.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Set excludefromgpa=1 for common non-GPA grades per AACRAO standards.
+        // P (Pass), CR (Credit), W (Withdrawal), I (Incomplete), IP (In Progress), WF (special case - has 0 points).
+        $DB->execute("UPDATE {gradereport_transcript_gradescale}
+                      SET excludefromgpa = 1
+                      WHERE UPPER(lettergrade) IN ('P', 'CR', 'W', 'I', 'IP', 'WP', 'S', 'U', 'N/A')");
+
+        // Transcript savepoint reached.
+        upgrade_plugin_savepoint(true, 2025102520, 'gradereport', 'transcript');
+    }
+
     return true;
 }
 

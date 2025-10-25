@@ -56,21 +56,29 @@ class gradereport_transcript_grade_calculator {
         // Clean up the letter grade (remove whitespace, convert to uppercase).
         $letter = strtoupper(trim($letter));
 
-        // Remove transfer symbol if present (e.g., "A T" -> "A").
-        $letter = trim(str_replace(['T', 'TR'], '', $letter));
-
-        // Handle special cases (incomplete, withdrawn, etc.).
-        $nongrades = ['W', 'WD', 'I', 'IP', 'N/A', 'NA', 'P', 'NP'];
-        if (in_array($letter, $nongrades)) {
-            return 0.0; // These don't count toward GPA.
-        }
+        // Remove transfer symbol if present (e.g., "B(T)" -> "B", "A T" -> "A").
+        $letter = preg_replace('/\([A-Z]+\)$/', '', $letter); // Remove (T), (TR), etc. at end.
+        $letter = trim(str_replace(['T', 'TR'], '', $letter)); // Legacy format support.
 
         // Load custom grade scale from database if schoolid provided.
         if ($schoolid !== null) {
             $customscale = $this->get_custom_grade_scale($schoolid);
             if (!empty($customscale) && isset($customscale[$letter])) {
-                return $customscale[$letter];
+                $gradeinfo = $customscale[$letter];
+
+                // AACRAO Compliance: Return NULL for grades excluded from GPA (P, W, I, CR, etc.).
+                if ($gradeinfo['excludefromgpa']) {
+                    return null;  // Signals this grade should not be included in GPA calculation.
+                }
+
+                return $gradeinfo['gradepoints'];
             }
+        }
+
+        // Handle special cases (incomplete, withdrawn, etc.) - fallback for schools without custom scales.
+        $nongrades = ['W', 'WD', 'I', 'IP', 'N/A', 'NA', 'P', 'NP', 'CR', 'NC'];
+        if (in_array($letter, $nongrades)) {
+            return null; // These don't count toward GPA.
         }
 
         // Fallback to default 4.0 scale.
@@ -81,10 +89,10 @@ class gradereport_transcript_grade_calculator {
      * Get custom grade scale mapping for a school
      *
      * Loads grading scale from gradereport_transcript_gradescale table.
-     * Returns array mapping letter grades to GPA points.
+     * Returns array mapping letter grades to GPA points and exclude flag.
      *
      * @param int $schoolid School ID
-     * @return array Mapping of letter grade => GPA points
+     * @return array Mapping of letter grade => ['gradepoints' => float, 'excludefromgpa' => bool]
      */
     protected function get_custom_grade_scale($schoolid) {
         global $DB;
@@ -102,7 +110,10 @@ class gradereport_transcript_grade_calculator {
 
         $mapping = [];
         foreach ($rows as $row) {
-            $mapping[$row->lettergrade] = (float)$row->gradepoints;
+            $mapping[$row->lettergrade] = [
+                'gradepoints' => (float)($row->gradepoints ?? 0),
+                'excludefromgpa' => (bool)($row->excludefromgpa ?? 0)
+            ];
         }
 
         // Cache for future calls.
@@ -165,6 +176,11 @@ class gradereport_transcript_grade_calculator {
         $totalweight = 0.0;
 
         foreach ($coursedata as $course) {
+            // AACRAO Standard: Exclude transfer credits from institutional GPA calculation.
+            if (isset($course->istransfer) && $course->istransfer === true) {
+                continue; // Skip transfer credits - they don't count toward institutional GPA.
+            }
+
             // Get grade letter.
             $gradeletter = $course->gradeletter ?? '';
 
@@ -176,9 +192,12 @@ class gradereport_transcript_grade_calculator {
             // Convert letter to GPA points (with custom scale support).
             $gradepoints = $this->letter_to_gpa($gradeletter, $schoolid);
 
-            // Skip grades that don't count (W, I, etc.).
+            // Skip grades excluded from GPA (NULL return) or that don't count (W, I, P, CR, etc.).
+            if ($gradepoints === null) {
+                continue;  // AACRAO: Excluded from GPA calculation.
+            }
             if ($gradepoints === 0.0 && !in_array(strtoupper($gradeletter), ['F', 'F+', 'F-'])) {
-                continue;
+                continue;  // Non-F zero grades don't count.
             }
 
             // Determine weight based on field.
@@ -187,11 +206,16 @@ class gradereport_transcript_grade_calculator {
             if ($weightfield === 'credits') {
                 $weight = $course->mapping->credits ?? 0.0;
             } else if ($weightfield === 'hours' || $weightfield === 'all') {
-                // Total hours (theory + lab + clinical).
-                $theoryhours = $course->mapping->theoryhours ?? 0.0;
-                $labhours = $course->mapping->labhours ?? 0.0;
-                $clinicalhours = $course->mapping->clinicalhours ?? 0.0;
-                $weight = $theoryhours + $labhours + $clinicalhours;
+                // Check if this is a transfer credit with single hours field.
+                if (isset($course->mapping->hours)) {
+                    $weight = $course->mapping->hours ?? 0.0;
+                } else {
+                    // Institutional course with detailed hour breakdown (theory + lab + clinical).
+                    $theoryhours = $course->mapping->theoryhours ?? 0.0;
+                    $labhours = $course->mapping->labhours ?? 0.0;
+                    $clinicalhours = $course->mapping->clinicalhours ?? 0.0;
+                    $weight = $theoryhours + $labhours + $clinicalhours;
+                }
             }
 
             // Skip if no weight.

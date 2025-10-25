@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir /b \"C:\\Users\\c_clo\\OneDrive\\Personal\\Coding\\moodle-VM\")",
+      "WebSearch",
+      "WebFetch(domain:moodledev.io)",
+      "Bash(gcloud config:*)",
+      "Bash(test:*)",
+      "WebFetch(domain:docs.moodle.org)",
+      "WebFetch(domain:github.com)",
+      "Bash(findstr:*)",
+      "Bash(dir /b:*)",
+      "Bash(php -l:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(find:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Read(//c/Users/c_clo/OneDrive/Personal/Coding/moodle-VM/**)",
+      "Read(//c/Users/c_clo/OneDrive/Personal/Coding/**)",
+      "Bash(gcloud compute instances list:*)",
+      "Bash(gcloud compute ssh:*)",
+      "Bash(gcloud compute scp:*)",
+      "Bash(tar:*)",
+      "Bash(dir:*)",
+      "WebFetch(domain:www.aacrao.org)",
+      "Read(//c/Users/c_clo/Downloads/**)",
+      "WebFetch(domain:tcpdf.org)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

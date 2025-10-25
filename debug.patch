@@ -1,0 +1,29 @@
+--- manage_requests.php.orig
++++ manage_requests.php
+@@ -58,6 +58,14 @@
+     if ($mform->is_cancelled()) {
+         redirect($PAGE->url);
+     } else if ($data = $mform->get_data()) {
++        // TEMPORARY DEBUG - Form submission
++        error_log('=== FORM GET_DATA DEBUG ===');
++        error_log('programstartdate: ' . var_export($data->programstartdate ?? 'NOT SET', true));
++        error_log('completionstatus: ' . var_export($data->completionstatus ?? 'NOT SET', true));
++        error_log('graduationdate: ' . var_export($data->graduationdate ?? 'NOT SET', true));
++        error_log('withdrawndate: ' . var_export($data->withdrawndate ?? 'NOT SET', true));
++
+         // Update request with payment and delivery information.
+         $updaterequest = new stdClass();
+         $updaterequest->id = $data->requestid;
+@@ -80,6 +88,12 @@
+             $updaterequest->graduationdate = !empty($data->graduationdate) ? $data->graduationdate : null;
+             $updaterequest->withdrawndate = !empty($data->withdrawndate) ? $data->withdrawndate : null;
+         }
++
++        // TEMPORARY DEBUG - Before update
++        error_log('=== BEFORE UPDATE_RECORD DEBUG ===');
++        error_log('updaterequest->programstartdate: ' . var_export($updaterequest->programstartdate ?? 'NOT SET', true));
++        error_log('updaterequest->completionstatus: ' . var_export($updaterequest->completionstatus ?? 'NOT SET', true));
++        error_log('updaterequest->graduationdate: ' . var_export($updaterequest->graduationdate ?? 'NOT SET', true));
+
+         // Handle pickup person name (store in delivery notes with structured format).
+         if ($request->deliverymethod === 'pickup' && !empty($data->pickupperson)) {

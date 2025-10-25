@@ -136,10 +136,10 @@ if (!empty($code)) {
         echo html_writer::tag('td', $doctype);
         echo html_writer::end_tag('tr');
 
-        // Issue date.
+        // Issue date (v1.0.20: American format).
         echo html_writer::start_tag('tr');
         echo html_writer::tag('th', get_string('issuedate', 'gradereport_transcript'), ['scope' => 'row']);
-        echo html_writer::tag('td', userdate($record->issuedate, get_string('strftimedatefullshort', 'langconfig')));
+        echo html_writer::tag('td', userdate($record->issuedate, '%B %d, %Y'));
         echo html_writer::end_tag('tr');
 
         // Verification code.
@@ -160,7 +160,7 @@ if (!empty($code)) {
         echo html_writer::end_tag('table');
 
         echo html_writer::tag('p', html_writer::tag('small', html_writer::tag('em',
-            'This transcript was issued on ' . userdate($record->issuedate) .
+            'This transcript was issued on ' . userdate($record->issuedate, '%B %d, %Y') .
             ' and is valid. The information above confirms the authenticity of this document.'
         )));
 

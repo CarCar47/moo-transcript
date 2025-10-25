@@ -263,6 +263,16 @@ if ($userid) {
             echo html_writer::link($officialurl, get_string('downloadofficial', 'gradereport_transcript'),
                 ['class' => 'btn btn-sm btn-success']);
 
+            echo ' ';
+
+            // Manage Transfer Credits button.
+            $transferurl = new moodle_url('/grade/report/transcript/manage_transfer_credits.php', [
+                'programid' => $program->id,
+                'userid' => $userid
+            ]);
+            echo html_writer::link($transferurl, get_string('managetransfercredits', 'gradereport_transcript'),
+                ['class' => 'btn btn-sm btn-info']);
+
             echo html_writer::end_tag('td');
             echo html_writer::end_tag('tr');
         }

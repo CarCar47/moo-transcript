@@ -109,10 +109,44 @@ class transfer_credit_form extends \moodleform {
             $mform->setDefault('credits', 0);
             $mform->addHelpButton('credits', 'transfercredits', 'gradereport_transcript');
         } else if ($program->type === 'hourbased') {
-            $mform->addElement('float', 'hours', get_string('totalhours', 'gradereport_transcript'));
-            $mform->setDefault('hours', 0);
-            $mform->addHelpButton('hours', 'transferhours', 'gradereport_transcript');
+            // Detailed hour breakdown for hour-based programs.
+            $mform->addElement('float', 'theoryhours', get_string('theoryhours', 'gradereport_transcript'));
+            $mform->setDefault('theoryhours', 0);
+            $mform->addHelpButton('theoryhours', 'transfertheorhours', 'gradereport_transcript');
+
+            $mform->addElement('float', 'labhours', get_string('labhours', 'gradereport_transcript'));
+            $mform->setDefault('labhours', 0);
+            $mform->addHelpButton('labhours', 'transferlabhours', 'gradereport_transcript');
+
+            $mform->addElement('float', 'clinicalhours', get_string('clinicalhours', 'gradereport_transcript'));
+            $mform->setDefault('clinicalhours', 0);
+            $mform->addHelpButton('clinicalhours', 'transferclinicalhours', 'gradereport_transcript');
+
+            // Hidden field for total hours (calculated automatically).
+            $mform->addElement('hidden', 'hours');
+            $mform->setType('hours', PARAM_FLOAT);
         }
+
+        // Section: Course Equivalency (AACRAO compliance - v1.0.17).
+        $mform->addElement('header', 'equivalencyheader', get_string('courseequivalency', 'gradereport_transcript'));
+
+        // Get list of courses in this program for equivalency mapping.
+        $coursemappings = $DB->get_records('gradereport_transcript_courses',
+            ['programid' => $programid], 'sortorder ASC', 'id, courseid, sortorder');
+
+        $courseoptions = [0 => get_string('notransfercourseequivalent', 'gradereport_transcript')];
+        if (!empty($coursemappings)) {
+            foreach ($coursemappings as $mapping) {
+                $course = $DB->get_record('course', ['id' => $mapping->courseid], 'id, shortname, fullname');
+                if ($course) {
+                    $courseoptions[$course->id] = $course->shortname . ' - ' . $course->fullname;
+                }
+            }
+        }
+
+        $mform->addElement('select', 'equivalentcourseid', get_string('replacescourse', 'gradereport_transcript'), $courseoptions);
+        $mform->setDefault('equivalentcourseid', 0);
+        $mform->addHelpButton('equivalentcourseid', 'replacescourse', 'gradereport_transcript');
 
         // Sort order.
         $mform->addElement('text', 'sortorder', get_string('sortorder', 'gradereport_transcript'), ['size' => 5]);
@@ -150,6 +184,22 @@ class transfer_credit_form extends \moodleform {
         }
         if (isset($data['hours']) && $data['hours'] < 0) {
             $errors['hours'] = get_string('valuemustbepositive', 'gradereport_transcript');
+        }
+
+        // Validate detailed hours for hour-based programs.
+        if (isset($data['theoryhours']) && $data['theoryhours'] < 0) {
+            $errors['theoryhours'] = get_string('valuemustbepositive', 'gradereport_transcript');
+        }
+        if (isset($data['labhours']) && $data['labhours'] < 0) {
+            $errors['labhours'] = get_string('valuemustbepositive', 'gradereport_transcript');
+        }
+        if (isset($data['clinicalhours']) && $data['clinicalhours'] < 0) {
+            $errors['clinicalhours'] = get_string('valuemustbepositive', 'gradereport_transcript');
+        }
+
+        // Calculate total hours from detailed breakdown for hour-based programs.
+        if (isset($data['theoryhours']) || isset($data['labhours']) || isset($data['clinicalhours'])) {
+            $data['hours'] = ($data['theoryhours'] ?? 0) + ($data['labhours'] ?? 0) + ($data['clinicalhours'] ?? 0);
         }
 
         return $errors;

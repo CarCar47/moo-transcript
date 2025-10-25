@@ -93,7 +93,7 @@ if ($action === 'delete' && $transferid) {
 
         echo $OUTPUT->confirm(
             get_string('deletetransfercreditconfirm', 'gradereport_transcript',
-                $transfer->coursecode . ' - ' . $transfer->coursename),
+                s($transfer->coursecode) . ' - ' . s($transfer->coursename)),
             new moodle_url('/grade/report/transcript/manage_transfer_credits.php', [
                 'action' => 'delete',
                 'id' => $transferid,
@@ -144,12 +144,45 @@ if ($action === 'add' || $action === 'edit') {
             $data->id = $transferid;
             $DB->update_record('gradereport_transcript_transfer', $data);
 
+            // Handle course equivalency mapping.
+            $equivalentcourseid = isset($data->equivalentcourseid) ? $data->equivalentcourseid : 0;
+
+            // Delete existing equivalency mapping for this transfer credit.
+            $DB->delete_records('gradereport_transcript_equivalency', ['transferid' => $transferid]);
+
+            // Create new equivalency mapping if a course was selected.
+            if ($equivalentcourseid > 0) {
+                $equivalency = new stdClass();
+                $equivalency->transferid = $transferid;
+                $equivalency->courseid = $equivalentcourseid;
+                $equivalency->programid = $programid;
+                $equivalency->userid = $userid;
+                $equivalency->timecreated = time();
+                $equivalency->timemodified = time();
+                $DB->insert_record('gradereport_transcript_equivalency', $equivalency);
+            }
+
             redirect($returnurl, get_string('transfercreditupdated', 'gradereport_transcript'), null,
                 \core\output\notification::NOTIFY_SUCCESS);
         } else {
             // Insert new transfer credit.
             $data->timecreated = time();
-            $DB->insert_record('gradereport_transcript_transfer', $data);
+            $newtransferid = $DB->insert_record('gradereport_transcript_transfer', $data);
+
+            // Handle course equivalency mapping.
+            $equivalentcourseid = isset($data->equivalentcourseid) ? $data->equivalentcourseid : 0;
+
+            // Create equivalency mapping if a course was selected.
+            if ($equivalentcourseid > 0) {
+                $equivalency = new stdClass();
+                $equivalency->transferid = $newtransferid;
+                $equivalency->courseid = $equivalentcourseid;
+                $equivalency->programid = $programid;
+                $equivalency->userid = $userid;
+                $equivalency->timecreated = time();
+                $equivalency->timemodified = time();
+                $DB->insert_record('gradereport_transcript_equivalency', $equivalency);
+            }
 
             redirect($returnurl, get_string('transfercreditadded', 'gradereport_transcript'), null,
                 \core\output\notification::NOTIFY_SUCCESS);
@@ -169,6 +202,16 @@ if ($action === 'add' || $action === 'edit') {
         $transfer = $DB->get_record('gradereport_transcript_transfer',
             ['id' => $transferid, 'programid' => $programid, 'userid' => $userid],
             '*', MUST_EXIST);
+
+        // Load equivalency mapping if exists.
+        $equivalency = $DB->get_record('gradereport_transcript_equivalency',
+            ['transferid' => $transferid], 'courseid');
+        if ($equivalency) {
+            $transfer->equivalentcourseid = $equivalency->courseid;
+        } else {
+            $transfer->equivalentcourseid = 0;
+        }
+
         $mform->set_data($transfer);
     } else {
         echo $OUTPUT->heading(get_string('addtransfercredit', 'gradereport_transcript'), 3);
@@ -219,20 +262,55 @@ if (empty($transfers)) {
 } else {
     // Display table.
     $table = new html_table();
-    $table->head = [
-        get_string('coursecode', 'gradereport_transcript'),
-        get_string('coursename', 'gradereport_transcript'),
-        get_string('institution', 'gradereport_transcript'),
-        get_string('grade', 'gradereport_transcript'),
-        $program->type === 'creditbased' ? get_string('credits', 'gradereport_transcript') : get_string('hours', 'gradereport_transcript'),
-        get_string('transfersymbol', 'gradereport_transcript'),
-        get_string('sortorder', 'gradereport_transcript'),
-        get_string('actions', 'gradereport_transcript'),
-    ];
+
+    // Build table headers based on program type.
+    if ($program->type === 'creditbased') {
+        $table->head = [
+            get_string('coursecode', 'gradereport_transcript'),
+            get_string('coursename', 'gradereport_transcript'),
+            get_string('institution', 'gradereport_transcript'),
+            get_string('grade', 'gradereport_transcript'),
+            get_string('credits', 'gradereport_transcript'),
+            get_string('transfersymbol', 'gradereport_transcript'),
+            get_string('sortorder', 'gradereport_transcript'),
+            get_string('actions', 'gradereport_transcript'),
+        ];
+    } else if ($program->type === 'hourbased') {
+        $table->head = [
+            get_string('coursecode', 'gradereport_transcript'),
+            get_string('coursename', 'gradereport_transcript'),
+            get_string('institution', 'gradereport_transcript'),
+            get_string('grade', 'gradereport_transcript'),
+            get_string('theoryhours', 'gradereport_transcript'),
+            get_string('labhours', 'gradereport_transcript'),
+            get_string('clinicalhours', 'gradereport_transcript'),
+            get_string('totalhours', 'gradereport_transcript'),
+            get_string('transfersymbol', 'gradereport_transcript'),
+            get_string('sortorder', 'gradereport_transcript'),
+            get_string('actions', 'gradereport_transcript'),
+        ];
+    } else {
+        // CEU program type.
+        $table->head = [
+            get_string('coursecode', 'gradereport_transcript'),
+            get_string('coursename', 'gradereport_transcript'),
+            get_string('institution', 'gradereport_transcript'),
+            get_string('grade', 'gradereport_transcript'),
+            get_string('ceuvalue', 'gradereport_transcript'),
+            get_string('transfersymbol', 'gradereport_transcript'),
+            get_string('sortorder', 'gradereport_transcript'),
+            get_string('actions', 'gradereport_transcript'),
+        ];
+    }
+
     $table->attributes['class'] = 'generaltable table table-striped';
 
     $totalcredits = 0;
+    $totaltheory = 0;
+    $totallab = 0;
+    $totalclinical = 0;
     $totalhours = 0;
+    $totalceu = 0;
 
     foreach ($transfers as $transfer) {
         $editurl = new moodle_url('/grade/report/transcript/manage_transfer_credits.php', [
@@ -252,43 +330,101 @@ if (empty($transfers)) {
         $actions = html_writer::link($editurl, get_string('edit')) . ' | ' .
                    html_writer::link($deleteurl, get_string('delete'));
 
-        $valuecolumn = $program->type === 'creditbased' ?
-            number_format($transfer->credits, 2) :
-            number_format($transfer->hours, 2);
-
         if ($program->type === 'creditbased') {
             $totalcredits += $transfer->credits;
-        } else {
-            $totalhours += $transfer->hours;
-        }
 
-        $table->data[] = [
-            s($transfer->coursecode),
-            s($transfer->coursename),
-            s($transfer->institution),
-            s($transfer->grade),
-            $valuecolumn,
-            s($transfer->transfersymbol),
-            $transfer->sortorder,
-            $actions,
-        ];
+            $table->data[] = [
+                s($transfer->coursecode),
+                s($transfer->coursename),
+                s($transfer->institution),
+                s($transfer->grade),
+                number_format($transfer->credits, 2),
+                s($transfer->transfersymbol),
+                $transfer->sortorder,
+                $actions,
+            ];
+        } else if ($program->type === 'hourbased') {
+            // Add defensive defaults for hour fields.
+            $theory = property_exists($transfer, 'theoryhours') ? $transfer->theoryhours : 0;
+            $lab = property_exists($transfer, 'labhours') ? $transfer->labhours : 0;
+            $clinical = property_exists($transfer, 'clinicalhours') ? $transfer->clinicalhours : 0;
+            $total = property_exists($transfer, 'hours') ? $transfer->hours : ($theory + $lab + $clinical);
+
+            $totaltheory += $theory;
+            $totallab += $lab;
+            $totalclinical += $clinical;
+            $totalhours += $total;
+
+            $table->data[] = [
+                s($transfer->coursecode),
+                s($transfer->coursename),
+                s($transfer->institution),
+                s($transfer->grade),
+                number_format($theory, 1),
+                number_format($lab, 1),
+                number_format($clinical, 1),
+                number_format($total, 1),
+                s($transfer->transfersymbol),
+                $transfer->sortorder,
+                $actions,
+            ];
+        } else {
+            // CEU type.
+            $ceu = property_exists($transfer, 'ceuvalue') ? $transfer->ceuvalue : 0;
+            $totalceu += $ceu;
+
+            $table->data[] = [
+                s($transfer->coursecode),
+                s($transfer->coursename),
+                s($transfer->institution),
+                s($transfer->grade),
+                number_format($ceu, 2),
+                s($transfer->transfersymbol),
+                $transfer->sortorder,
+                $actions,
+            ];
+        }
     }
 
-    // Add totals row.
-    $totalvalue = $program->type === 'creditbased' ?
-        number_format($totalcredits, 2) :
-        number_format($totalhours, 2);
-
-    $table->data[] = [
-        '',
-        html_writer::tag('strong', get_string('total', 'core')),
-        '',
-        '',
-        html_writer::tag('strong', $totalvalue),
-        '',
-        '',
-        '',
-    ];
+    // Add totals row based on program type.
+    if ($program->type === 'creditbased') {
+        $table->data[] = [
+            '',
+            html_writer::tag('strong', get_string('total', 'core')),
+            '',
+            '',
+            html_writer::tag('strong', number_format($totalcredits, 2)),
+            '',
+            '',
+            '',
+        ];
+    } else if ($program->type === 'hourbased') {
+        $table->data[] = [
+            '',
+            html_writer::tag('strong', get_string('total', 'core')),
+            '',
+            '',
+            html_writer::tag('strong', number_format($totaltheory, 1)),
+            html_writer::tag('strong', number_format($totallab, 1)),
+            html_writer::tag('strong', number_format($totalclinical, 1)),
+            html_writer::tag('strong', number_format($totalhours, 1)),
+            '',
+            '',
+            '',
+        ];
+    } else {
+        // CEU type.
+        $table->data[] = [
+            '',
+            html_writer::tag('strong', get_string('total', 'core')),
+            '',
+            '',
+            html_writer::tag('strong', number_format($totalceu, 2)),
+            '',
+            '',
+            '',
+        ];
+    }
 
     echo html_writer::table($table);
 }

@@ -66,20 +66,26 @@ class gradescale_form extends \moodleform {
         $mform->addRule('lettergrade', get_string('required'), 'required', null, 'client');
         $mform->addHelpButton('lettergrade', 'lettergrade', 'gradereport_transcript');
 
-        // Percentage range (minimum).
+        // Exclude from GPA checkbox (AACRAO standard for P, W, I, CR grades).
+        $mform->addElement('advcheckbox', 'excludefromgpa', get_string('excludefromgpa', 'gradereport_transcript'),
+            get_string('excludefromgpa_help', 'gradereport_transcript'));
+        $mform->setDefault('excludefromgpa', 0);
+        $mform->addHelpButton('excludefromgpa', 'excludefromgpa', 'gradereport_transcript');
+
+        // Percentage range (minimum) - Optional for non-GPA grades.
         $mform->addElement('float', 'minpercentage', get_string('minpercentage', 'gradereport_transcript'));
-        $mform->addRule('minpercentage', get_string('required'), 'required', null, 'client');
         $mform->addHelpButton('minpercentage', 'minpercentage', 'gradereport_transcript');
+        $mform->disabledIf('minpercentage', 'excludefromgpa', 'checked');
 
-        // Percentage range (maximum).
+        // Percentage range (maximum) - Optional for non-GPA grades.
         $mform->addElement('float', 'maxpercentage', get_string('maxpercentage', 'gradereport_transcript'));
-        $mform->addRule('maxpercentage', get_string('required'), 'required', null, 'client');
         $mform->addHelpButton('maxpercentage', 'maxpercentage', 'gradereport_transcript');
+        $mform->disabledIf('maxpercentage', 'excludefromgpa', 'checked');
 
-        // Grade points (e.g., 4.0, 3.0, 2.0).
+        // Grade points (e.g., 4.0, 3.0, 2.0) - Optional for non-GPA grades.
         $mform->addElement('float', 'gradepoints', get_string('gradepoints', 'gradereport_transcript'));
-        $mform->addRule('gradepoints', get_string('required'), 'required', null, 'client');
         $mform->addHelpButton('gradepoints', 'gradepoints', 'gradereport_transcript');
+        $mform->disabledIf('gradepoints', 'excludefromgpa', 'checked');
 
         // Quality descriptor (e.g., Excellent, Good, Satisfactory).
         $mform->addElement('text', 'quality', get_string('quality', 'gradereport_transcript'), ['size' => 30]);
@@ -111,20 +117,37 @@ class gradescale_form extends \moodleform {
             $errors['lettergrade'] = get_string('required');
         }
 
-        // Validate percentage range.
-        if ($data['minpercentage'] < 0 || $data['minpercentage'] > 100) {
-            $errors['minpercentage'] = get_string('percentagerange', 'gradereport_transcript');
-        }
-        if ($data['maxpercentage'] < 0 || $data['maxpercentage'] > 100) {
-            $errors['maxpercentage'] = get_string('percentagerange', 'gradereport_transcript');
-        }
-        if ($data['minpercentage'] > $data['maxpercentage']) {
-            $errors['minpercentage'] = get_string('minmustbelessmax', 'gradereport_transcript');
-        }
+        // If NOT excluded from GPA, require numeric values.
+        if (empty($data['excludefromgpa'])) {
+            // Validate percentage range only if included in GPA.
+            if (!isset($data['minpercentage']) || $data['minpercentage'] === '') {
+                $errors['minpercentage'] = get_string('required');
+            } else if ($data['minpercentage'] < 0 || $data['minpercentage'] > 100) {
+                $errors['minpercentage'] = get_string('percentagerange', 'gradereport_transcript');
+            }
 
-        // Validate grade points are non-negative.
-        if ($data['gradepoints'] < 0) {
-            $errors['gradepoints'] = get_string('valuemustbepositive', 'gradereport_transcript');
+            if (!isset($data['maxpercentage']) || $data['maxpercentage'] === '') {
+                $errors['maxpercentage'] = get_string('required');
+            } else if ($data['maxpercentage'] < 0 || $data['maxpercentage'] > 100) {
+                $errors['maxpercentage'] = get_string('percentagerange', 'gradereport_transcript');
+            }
+
+            if (isset($data['minpercentage']) && isset($data['maxpercentage']) &&
+                $data['minpercentage'] > $data['maxpercentage']) {
+                $errors['minpercentage'] = get_string('minmustbelessmax', 'gradereport_transcript');
+            }
+
+            // Validate grade points only if included in GPA.
+            if (!isset($data['gradepoints']) || $data['gradepoints'] === '') {
+                $errors['gradepoints'] = get_string('required');
+            } else if ($data['gradepoints'] < 0) {
+                $errors['gradepoints'] = get_string('valuemustbepositive', 'gradereport_transcript');
+            }
+        } else {
+            // Excluded from GPA - set values to NULL for database.
+            $data['minpercentage'] = null;
+            $data['maxpercentage'] = null;
+            $data['gradepoints'] = null;
         }
 
         return $errors;

@@ -24,6 +24,8 @@
 
 require_once('../../../config.php');
 require_once($CFG->dirroot . '/grade/report/transcript/classes/transcript_generator.php');
+require_once($CFG->dirroot . '/grade/report/transcript/classes/transcript_pdf.php');
+require_once($CFG->dirroot . '/grade/report/transcript/classes/grade_calculator.php');
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -228,7 +230,6 @@ try {
         $totalpoints = 0;
         $totalceu = 0;
 
-        require_once(__DIR__ . '/classes/grade_calculator.php');
         $calculator = new gradereport_transcript_grade_calculator();
 
         foreach ($grades as $coursedata) {
