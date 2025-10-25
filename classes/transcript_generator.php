@@ -952,20 +952,18 @@ class gradereport_transcript_generator {
                 $mapping = $coursedata->mapping;
                 $course = $coursedata->course;
 
-                $gradepoints = $this->gradecalculator->letter_to_gpa($coursedata->gradeletter ?? '', $this->school->id);
-                $qualitypoints = $gradepoints * $mapping->credits;
-
+                // AACRAO Standard: Transfer credits do not generate quality points for institutional GPA.
                 $coursename = htmlspecialchars($course->shortname . ' - ' . $course->fullname);
 
                 $html .= '<tr>';
                 $html .= '<td align="left">' . $coursename . '</td>';
                 $html .= '<td align="center">' . htmlspecialchars($coursedata->gradeletter ?? 'N/A') . '</td>';
                 $html .= '<td align="center">' . number_format($mapping->credits, 1) . '</td>';
-                $html .= '<td align="center">' . number_format($qualitypoints, 2) . '</td>';
+                $html .= '<td align="center">N/A</td>';
                 $html .= '</tr>';
 
                 $transfertotalcredits += $mapping->credits;
-                $transfertotalpoints += $qualitypoints;
+                // Do not add to $transfertotalpoints - transfer credits excluded from quality points.
             }
 
             // Transfer credits subtotal.
@@ -973,7 +971,7 @@ class gradereport_transcript_generator {
             $html .= '<td align="right">Transfer Credits Subtotal</td>';
             $html .= '<td align="center"></td>';
             $html .= '<td align="center">' . number_format($transfertotalcredits, 1) . '</td>';
-            $html .= '<td align="center">' . number_format($transfertotalpoints, 2) . '</td>';
+            $html .= '<td align="center">N/A</td>';
             $html .= '</tr>';
         }
 
@@ -1018,7 +1016,8 @@ class gradereport_transcript_generator {
 
         // Grand totals row.
         $totalcredits = $transfertotalcredits + $institutionaltotalcredits;
-        $totalpoints = $transfertotalpoints + $institutionaltotalpoints;
+        // AACRAO Standard: Only institutional quality points count toward GPA.
+        $totalpoints = $institutionaltotalpoints;
 
         $html .= '<tr style="font-weight:bold;background-color:#CCCCCC;">';
         $html .= '<td align="right">TOTAL CREDITS</td>';

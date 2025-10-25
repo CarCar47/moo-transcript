@@ -24,8 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2025102520;               // The current plugin version (Date: YYYYMMDDXX).
+$plugin->version   = 2025102521;               // The current plugin version (Date: YYYYMMDDXX).
 $plugin->requires  = 2025092600;               // Requires Moodle 5.1.
 $plugin->component = 'gradereport_transcript'; // Full name of the plugin (used for diagnostics).
 $plugin->maturity  = MATURITY_STABLE;          // Production-ready stable release.
-$plugin->release   = '1.0.26';                 // FEATURE: Add AACRAO-compliant excludefromgpa flag for non-qualitative grades (P, W, I, CR).
+$plugin->release   = '1.0.27';                 // FIX: AACRAO compliance - exclude transfer credit quality points from transcript display.
