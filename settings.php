@@ -109,6 +109,22 @@ if ($hassiteconfig) {
         'gradereport/transcript:manage'
     ));
 
+    // Add grading scale management page (Phase 8 - v1.0.15)
+    $ADMIN->add('gradereporttranscript', new admin_externalpage(
+        'gradereporttranscriptgradescale',
+        get_string('managegradescale', 'gradereport_transcript'),
+        new moodle_url('/grade/report/transcript/manage_gradescale.php'),
+        'gradereport/transcript:manage'
+    ));
+
+    // Add symbols management page (Phase 8 - v1.0.15)
+    $ADMIN->add('gradereporttranscript', new admin_externalpage(
+        'gradereporttranscriptsymbols',
+        get_string('managesymbols', 'gradereport_transcript'),
+        new moodle_url('/grade/report/transcript/manage_symbols.php'),
+        'gradereport/transcript:manage'
+    ));
+
     // Add pricing configuration page (Phase 6.2)
     $ADMIN->add('gradereporttranscript', new admin_externalpage(
         'gradereporttranscriptpricing',

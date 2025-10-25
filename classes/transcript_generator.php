@@ -200,13 +200,58 @@ class gradereport_transcript_generator {
     }
 
     /**
+     * Get transfer credits for this student and program
+     *
+     * Retrieves custom transfer credit entries from the database.
+     * Transfer credits are displayed ABOVE institutional courses on transcripts.
+     *
+     * @return array Array of transfer credit course data
+     */
+    protected function get_transfer_credits() {
+        global $DB;
+
+        $sql = "SELECT *
+                  FROM {gradereport_transcript_transfer}
+                 WHERE programid = ? AND userid = ?
+              ORDER BY sortorder ASC, id ASC";
+
+        $transfers = $DB->get_records_sql($sql, [$this->programid, $this->userid]);
+
+        $coursedata = [];
+        foreach ($transfers as $transfer) {
+            // Format grade with transfer symbol (e.g., "A T").
+            $gradeletter = trim($transfer->grade);
+            if (!empty($transfer->transfersymbol)) {
+                $gradeletter .= ' ' . $transfer->transfersymbol;
+            }
+
+            $coursedata[] = (object)[
+                'mapping' => $transfer,
+                'course' => (object)[
+                    'shortname' => $transfer->coursecode,
+                    'fullname' => $transfer->coursename
+                ],
+                'gradeletter' => $gradeletter,
+                'gradevalue' => null,
+                'gradepercentage' => null,
+                'sortorder' => $transfer->sortorder,
+                'istransfer' => true,
+            ];
+        }
+
+        return $coursedata;
+    }
+
+    /**
      * Get student grades for all mapped courses
      *
      * Uses Moodle's official Gradebook API (grade_get_course_grade) to retrieve
      * final course grades. This method handles grade overrides, hidden grades,
      * locked grades, and automatically recalculates stale grades.
      *
-     * @return array Array of course data with grades
+     * Now includes transfer credits FIRST, followed by institutional courses.
+     *
+     * @return array Array of course data with grades (transfer + institutional)
      */
     public function get_student_grades() {
         global $DB, $CFG;
@@ -215,6 +260,10 @@ class gradereport_transcript_generator {
         require_once($CFG->dirroot . '/grade/querylib.php'); // For grade_get_gradable_activities().
 
         if (!isset($this->grades)) {
+            // Get transfer credits FIRST.
+            $transfercredits = $this->get_transfer_credits();
+
+            // Get institutional courses.
             $mappings = $this->get_course_mappings();
             $coursedata = [];
 
@@ -287,10 +336,12 @@ class gradereport_transcript_generator {
                     'gradeletter' => $gradeletter,
                     'gradepercentage' => $gradepercentage,
                     'sortorder' => $mapping->sortorder,
+                    'istransfer' => false,
                 ];
             }
 
-            $this->grades = $coursedata;
+            // Merge transfer credits FIRST, then institutional courses.
+            $this->grades = array_merge($transfercredits, $coursedata);
         }
 
         return $this->grades;
@@ -678,8 +729,19 @@ class gradereport_transcript_generator {
     protected function add_creditbased_courses_table($pdf) {
         $grades = $this->get_student_grades();
 
-        // Calculate GPA.
-        $gpa = $this->gradecalculator->calculate_weighted_gpa($grades, 'credits');
+        // Separate transfer credits from institutional courses.
+        $transfercredits = [];
+        $institutionalcredits = [];
+        foreach ($grades as $coursedata) {
+            if (!empty($coursedata->istransfer)) {
+                $transfercredits[] = $coursedata;
+            } else {
+                $institutionalcredits[] = $coursedata;
+            }
+        }
+
+        // Calculate GPA (using school's custom scale).
+        $gpa = $this->gradecalculator->calculate_weighted_gpa($grades, 'credits', $this->school->id);
 
         // Table header.
         $pdf->SetFont('helvetica', 'B', 10);
@@ -696,33 +758,90 @@ class gradereport_transcript_generator {
         $html .= '<th width="14%" align="center">Points</th>';
         $html .= '</tr>';
 
-        // Data rows.
-        $totalcredits = 0;
-        $totalpoints = 0;
+        // Transfer credits section.
+        $transfertotalcredits = 0;
+        $transfertotalpoints = 0;
 
-        foreach ($grades as $coursedata) {
-            $mapping = $coursedata->mapping;
-            $course = $coursedata->course;
-
-            $gradepoints = $this->gradecalculator->letter_to_gpa($coursedata->gradeletter ?? '');
-            $qualitypoints = $gradepoints * $mapping->credits;
-
-            $coursename = htmlspecialchars($course->shortname . ' - ' . $course->fullname);
-
-            $html .= '<tr>';
-            $html .= '<td align="left">' . $coursename . '</td>';
-            $html .= '<td align="center">' . ($coursedata->gradeletter ?? 'N/A') . '</td>';
-            $html .= '<td align="center">' . number_format($mapping->credits, 1) . '</td>';
-            $html .= '<td align="center">' . number_format($qualitypoints, 2) . '</td>';
+        if (!empty($transfercredits)) {
+            // Transfer credits section header.
+            $html .= '<tr style="background-color:#EEEEEE;font-weight:bold;">';
+            $html .= '<td colspan="4" align="left">TRANSFER CREDITS</td>';
             $html .= '</tr>';
 
-            $totalcredits += $mapping->credits;
-            $totalpoints += $qualitypoints;
+            foreach ($transfercredits as $coursedata) {
+                $mapping = $coursedata->mapping;
+                $course = $coursedata->course;
+
+                $gradepoints = $this->gradecalculator->letter_to_gpa($coursedata->gradeletter ?? '', $this->school->id);
+                $qualitypoints = $gradepoints * $mapping->credits;
+
+                $coursename = htmlspecialchars($course->shortname . ' - ' . $course->fullname);
+
+                $html .= '<tr>';
+                $html .= '<td align="left">' . $coursename . '</td>';
+                $html .= '<td align="center">' . htmlspecialchars($coursedata->gradeletter ?? 'N/A') . '</td>';
+                $html .= '<td align="center">' . number_format($mapping->credits, 1) . '</td>';
+                $html .= '<td align="center">' . number_format($qualitypoints, 2) . '</td>';
+                $html .= '</tr>';
+
+                $transfertotalcredits += $mapping->credits;
+                $transfertotalpoints += $qualitypoints;
+            }
+
+            // Transfer credits subtotal.
+            $html .= '<tr style="font-weight:bold;background-color:#F5F5F5;">';
+            $html .= '<td align="right">Transfer Credits Subtotal</td>';
+            $html .= '<td align="center"></td>';
+            $html .= '<td align="center">' . number_format($transfertotalcredits, 1) . '</td>';
+            $html .= '<td align="center">' . number_format($transfertotalpoints, 2) . '</td>';
+            $html .= '</tr>';
         }
 
-        // Totals row.
-        $html .= '<tr style="font-weight:bold;">';
-        $html .= '<td align="right">TOTAL</td>';
+        // Institutional credits section.
+        $institutionaltotalcredits = 0;
+        $institutionaltotalpoints = 0;
+
+        if (!empty($institutionalcredits)) {
+            // Institutional credits section header.
+            $html .= '<tr style="background-color:#EEEEEE;font-weight:bold;">';
+            $html .= '<td colspan="4" align="left">INSTITUTIONAL CREDITS</td>';
+            $html .= '</tr>';
+
+            foreach ($institutionalcredits as $coursedata) {
+                $mapping = $coursedata->mapping;
+                $course = $coursedata->course;
+
+                $gradepoints = $this->gradecalculator->letter_to_gpa($coursedata->gradeletter ?? '', $this->school->id);
+                $qualitypoints = $gradepoints * $mapping->credits;
+
+                $coursename = htmlspecialchars($course->shortname . ' - ' . $course->fullname);
+
+                $html .= '<tr>';
+                $html .= '<td align="left">' . $coursename . '</td>';
+                $html .= '<td align="center">' . htmlspecialchars($coursedata->gradeletter ?? 'N/A') . '</td>';
+                $html .= '<td align="center">' . number_format($mapping->credits, 1) . '</td>';
+                $html .= '<td align="center">' . number_format($qualitypoints, 2) . '</td>';
+                $html .= '</tr>';
+
+                $institutionaltotalcredits += $mapping->credits;
+                $institutionaltotalpoints += $qualitypoints;
+            }
+
+            // Institutional credits subtotal.
+            $html .= '<tr style="font-weight:bold;background-color:#F5F5F5;">';
+            $html .= '<td align="right">Institutional Credits Subtotal</td>';
+            $html .= '<td align="center"></td>';
+            $html .= '<td align="center">' . number_format($institutionaltotalcredits, 1) . '</td>';
+            $html .= '<td align="center">' . number_format($institutionaltotalpoints, 2) . '</td>';
+            $html .= '</tr>';
+        }
+
+        // Grand totals row.
+        $totalcredits = $transfertotalcredits + $institutionaltotalcredits;
+        $totalpoints = $transfertotalpoints + $institutionaltotalpoints;
+
+        $html .= '<tr style="font-weight:bold;background-color:#CCCCCC;">';
+        $html .= '<td align="right">TOTAL CREDITS</td>';
         $html .= '<td align="center"></td>';
         $html .= '<td align="center">' . number_format($totalcredits, 1) . '</td>';
         $html .= '<td align="center">' . number_format($totalpoints, 2) . '</td>';
@@ -908,6 +1027,8 @@ class gradereport_transcript_generator {
      * @param pdf $pdf PDF object
      */
     protected function add_academic_info_page($pdf) {
+        global $DB;
+
         // Add new page for academic information
         $pdf->AddPage();
 
@@ -916,9 +1037,13 @@ class gradereport_transcript_generator {
         $pdf->Cell(0, 10, 'ACADEMIC INFORMATION', 0, 1, 'C');
         $pdf->Ln(5);
 
-        // Section 1: Grading Scale
+        // Section 1: Grading Scale (from database - custom per school)
         $pdf->SetFont('helvetica', 'B', 10);
         $pdf->Cell(0, 7, 'GRADING SCALE', 0, 1, 'L');
+
+        // Load custom grading scale from database.
+        $gradescale = $DB->get_records('gradereport_transcript_gradescale',
+            ['schoolid' => $this->school->id], 'sortorder ASC');
 
         $html = '<table border="1" cellpadding="4" cellspacing="0" style="font-size:9pt;">';
         $html .= '<tr style="background-color:#CCCCCC;font-weight:bold;">';
@@ -928,21 +1053,36 @@ class gradereport_transcript_generator {
         $html .= '<th width="30%" align="center">Quality</th>';
         $html .= '</tr>';
 
-        $grades = [
-            ['A', '90-100%', '4.0', 'Excellent'],
-            ['B', '80-89%', '3.0', 'Good'],
-            ['C', '70-79%', '2.0', 'Satisfactory'],
-            ['D', '60-69%', '1.0', 'Poor'],
-            ['F', 'Below 60%', '0.0', 'Failing']
-        ];
+        if (empty($gradescale)) {
+            // Fallback to default if no custom scale exists.
+            $grades = [
+                ['A', '90-100%', '4.0', 'Excellent'],
+                ['B', '80-89%', '3.0', 'Good'],
+                ['C', '70-79%', '2.0', 'Satisfactory'],
+                ['D', '60-69%', '1.0', 'Poor'],
+                ['F', 'Below 60%', '0.0', 'Failing']
+            ];
 
-        foreach ($grades as $grade) {
-            $html .= '<tr>';
-            $html .= '<td align="center">' . $grade[0] . '</td>';
-            $html .= '<td align="center">' . $grade[1] . '</td>';
-            $html .= '<td align="center">' . $grade[2] . '</td>';
-            $html .= '<td align="center">' . $grade[3] . '</td>';
-            $html .= '</tr>';
+            foreach ($grades as $grade) {
+                $html .= '<tr>';
+                $html .= '<td align="center">' . $grade[0] . '</td>';
+                $html .= '<td align="center">' . $grade[1] . '</td>';
+                $html .= '<td align="center">' . $grade[2] . '</td>';
+                $html .= '<td align="center">' . $grade[3] . '</td>';
+                $html .= '</tr>';
+            }
+        } else {
+            // Use custom grading scale from database.
+            foreach ($gradescale as $row) {
+                $percentagerange = number_format($row->minpercentage, 0) . '-' . number_format($row->maxpercentage, 0) . '%';
+
+                $html .= '<tr>';
+                $html .= '<td align="center">' . htmlspecialchars($row->lettergrade) . '</td>';
+                $html .= '<td align="center">' . $percentagerange . '</td>';
+                $html .= '<td align="center">' . number_format($row->gradepoints, 1) . '</td>';
+                $html .= '<td align="center">' . htmlspecialchars($row->quality) . '</td>';
+                $html .= '</tr>';
+            }
         }
 
         $html .= '</table>';
@@ -958,19 +1098,14 @@ class gradereport_transcript_generator {
             $pdf->Ln(3);
         }
 
-        // Section 3: Symbols and Notations
+        // Section 3: Symbols and Notations (from database - custom per school)
         $pdf->SetFont('helvetica', 'B', 10);
         $pdf->Cell(0, 7, 'SYMBOLS AND NOTATIONS', 0, 1, 'L');
         $pdf->SetFont('helvetica', '', 9);
 
-        $symbols = [
-            ['W', 'Withdrawn - Student officially withdrew from the course'],
-            ['I', 'Incomplete - Coursework not completed within the term'],
-            ['T', 'Transfer Credit - Credit earned at another institution'],
-            ['P', 'Pass - Credit earned in pass/fail course'],
-            ['AU', 'Audit - Course taken for no credit'],
-            ['IP', 'In Progress - Course currently being taken']
-        ];
+        // Load custom symbols from database.
+        $symbolsdb = $DB->get_records('gradereport_transcript_symbols',
+            ['schoolid' => $this->school->id], 'sortorder ASC');
 
         $html = '<table border="1" cellpadding="3" cellspacing="0" style="font-size:9pt;">';
         $html .= '<tr style="background-color:#CCCCCC;font-weight:bold;">';
@@ -978,11 +1113,31 @@ class gradereport_transcript_generator {
         $html .= '<th width="85%" align="left">Meaning</th>';
         $html .= '</tr>';
 
-        foreach ($symbols as $symbol) {
-            $html .= '<tr>';
-            $html .= '<td align="center"><strong>' . $symbol[0] . '</strong></td>';
-            $html .= '<td align="left">' . $symbol[1] . '</td>';
-            $html .= '</tr>';
+        if (empty($symbolsdb)) {
+            // Fallback to default symbols if none exist.
+            $symbols = [
+                ['W', 'Withdrawn - Student officially withdrew from the course'],
+                ['I', 'Incomplete - Coursework not completed within the term'],
+                ['T', 'Transfer Credit - Credit earned at another institution'],
+                ['P', 'Pass - Credit earned in pass/fail course'],
+                ['AU', 'Audit - Course taken for no credit'],
+                ['IP', 'In Progress - Course currently being taken']
+            ];
+
+            foreach ($symbols as $symbol) {
+                $html .= '<tr>';
+                $html .= '<td align="center"><strong>' . $symbol[0] . '</strong></td>';
+                $html .= '<td align="left">' . $symbol[1] . '</td>';
+                $html .= '</tr>';
+            }
+        } else {
+            // Use custom symbols from database.
+            foreach ($symbolsdb as $symbolrow) {
+                $html .= '<tr>';
+                $html .= '<td align="center"><strong>' . htmlspecialchars($symbolrow->symbol) . '</strong></td>';
+                $html .= '<td align="left">' . htmlspecialchars($symbolrow->meaning) . '</td>';
+                $html .= '</tr>';
+            }
         }
 
         $html .= '</table>';

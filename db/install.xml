@@ -31,6 +31,9 @@
         <FIELD NAME="type" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="hourbased" SEQUENCE="false" COMMENT="Type: hourbased, creditbased, or ceu"/>
         <FIELD NAME="pdftemplate" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="Path to PDF template file"/>
         <FIELD NAME="gradescaleid" TYPE="int" LENGTH="10" NOTNULL="false" DEFAULT="0" SEQUENCE="false" COMMENT="Custom grade scale ID"/>
+        <FIELD NAME="hour1label" TYPE="char" LENGTH="50" NOTNULL="false" DEFAULT="Theory Hours" SEQUENCE="false" COMMENT="Label for first hour type"/>
+        <FIELD NAME="hour2label" TYPE="char" LENGTH="50" NOTNULL="false" DEFAULT="Lab Hours" SEQUENCE="false" COMMENT="Label for second hour type"/>
+        <FIELD NAME="hour3label" TYPE="char" LENGTH="50" NOTNULL="false" DEFAULT="Clinical Hours" SEQUENCE="false" COMMENT="Label for third hour type"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
       </FIELDS>
@@ -51,10 +54,11 @@
         <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Moodle course ID"/>
         <FIELD NAME="sortorder" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Display order on transcript"/>
         <FIELD NAME="pdffieldprefix" TYPE="char" LENGTH="100" NOTNULL="false" SEQUENCE="false" COMMENT="PDF form field prefix (e.g., PMU1, PMU2)"/>
-        <FIELD NAME="theoryhours" TYPE="number" LENGTH="10" NOTNULL="false" DEFAULT="0" SEQUENCE="false" DECIMALS="2" COMMENT="Theory hours for hour-based programs"/>
-        <FIELD NAME="labhours" TYPE="number" LENGTH="10" NOTNULL="false" DEFAULT="0" SEQUENCE="false" DECIMALS="2" COMMENT="Lab hours for hour-based programs"/>
-        <FIELD NAME="credits" TYPE="number" LENGTH="10" NOTNULL="false" DEFAULT="0" SEQUENCE="false" DECIMALS="2" COMMENT="Credits for credit-based programs"/>
-        <FIELD NAME="ceuvalue" TYPE="number" LENGTH="10" NOTNULL="false" DEFAULT="0" SEQUENCE="false" DECIMALS="2" COMMENT="CEU value"/>
+        <FIELD NAME="theoryhours" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="false" SEQUENCE="false" DEFAULT="0" COMMENT="Theory hours for hour-based programs"/>
+        <FIELD NAME="labhours" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="false" SEQUENCE="false" DEFAULT="0" COMMENT="Lab hours for hour-based programs"/>
+        <FIELD NAME="clinicalhours" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="false" SEQUENCE="false" DEFAULT="0" COMMENT="Clinical hours for hour-based programs"/>
+        <FIELD NAME="credits" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="false" SEQUENCE="false" DEFAULT="0" COMMENT="Credits for credit-based programs"/>
+        <FIELD NAME="ceuvalue" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="false" SEQUENCE="false" DEFAULT="0" COMMENT="CEU value"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
       </FIELDS>
@@ -74,8 +78,8 @@
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="schoolid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Reference to school"/>
         <FIELD NAME="firstfree" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="First official transcript free (1=yes, 0=no)"/>
-        <FIELD NAME="officialprice" TYPE="number" LENGTH="10" NOTNULL="false" DEFAULT="0.00" SEQUENCE="false" DECIMALS="2" COMMENT="Price for official transcripts"/>
-        <FIELD NAME="unofficialprice" TYPE="number" LENGTH="10" NOTNULL="false" DEFAULT="0.00" SEQUENCE="false" DECIMALS="2" COMMENT="Price for unofficial transcripts"/>
+        <FIELD NAME="officialprice" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="false" SEQUENCE="false" DEFAULT="0.00" COMMENT="Price for official transcripts"/>
+        <FIELD NAME="unofficialprice" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="false" SEQUENCE="false" DEFAULT="0.00" COMMENT="Price for unofficial transcripts"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
       </FIELDS>
@@ -99,7 +103,7 @@
         <FIELD NAME="recipientname" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="Institution/company name for official transcripts"/>
         <FIELD NAME="recipientphone" TYPE="char" LENGTH="50" NOTNULL="false" SEQUENCE="false" COMMENT="Recipient phone number"/>
         <FIELD NAME="notes" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Additional notes from student"/>
-        <FIELD NAME="price" TYPE="number" LENGTH="10" NOTNULL="false" DEFAULT="0.00" SEQUENCE="false" DECIMALS="2" COMMENT="Calculated price for this request"/>
+        <FIELD NAME="price" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="false" SEQUENCE="false" DEFAULT="0.00" COMMENT="Calculated price for this request"/>
         <FIELD NAME="paymentstatus" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="pending" SEQUENCE="false" COMMENT="Payment status: pending, paid, free"/>
         <FIELD NAME="paymentmethod" TYPE="char" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="Payment method: cash, invoice"/>
         <FIELD NAME="invoicenumber" TYPE="char" LENGTH="50" NOTNULL="false" SEQUENCE="false" COMMENT="Invoice number for tracking"/>
@@ -150,6 +154,76 @@
       <INDEXES>
         <INDEX NAME="userid" UNIQUE="false" FIELDS="userid"/>
         <INDEX NAME="verificationcode" UNIQUE="true" FIELDS="verificationcode"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- Transfer credits table -->
+    <TABLE NAME="gradereport_transcript_transfer" COMMENT="Stores custom transfer credit entries per student">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="programid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Reference to program"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Student user ID"/>
+        <FIELD NAME="coursecode" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false" COMMENT="Transfer course code"/>
+        <FIELD NAME="coursename" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Transfer course name"/>
+        <FIELD NAME="grade" TYPE="char" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Letter grade earned"/>
+        <FIELD NAME="credits" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="false" SEQUENCE="false" DEFAULT="0" COMMENT="Credits for credit-based programs"/>
+        <FIELD NAME="hours" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="false" SEQUENCE="false" DEFAULT="0" COMMENT="Hours for hour-based programs"/>
+        <FIELD NAME="transfersymbol" TYPE="char" LENGTH="10" NOTNULL="false" DEFAULT="T" SEQUENCE="false" COMMENT="Transfer symbol/notation"/>
+        <FIELD NAME="institution" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="Originating institution name"/>
+        <FIELD NAME="sortorder" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Display order on transcript"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="programid" TYPE="foreign" FIELDS="programid" REFTABLE="gradereport_transcript_programs" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userid" UNIQUE="false" FIELDS="userid"/>
+        <INDEX NAME="userid_program" UNIQUE="false" FIELDS="userid, programid"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- Custom grading scales table -->
+    <TABLE NAME="gradereport_transcript_gradescale" COMMENT="Stores custom grading scale definitions per school">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="schoolid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Reference to school"/>
+        <FIELD NAME="lettergrade" TYPE="char" LENGTH="5" NOTNULL="true" SEQUENCE="false" COMMENT="Letter grade (A, B, C, etc.)"/>
+        <FIELD NAME="minpercentage" TYPE="number" LENGTH="5" DECIMALS="2" NOTNULL="false" SEQUENCE="false" DEFAULT="0" COMMENT="Minimum percentage for this grade"/>
+        <FIELD NAME="maxpercentage" TYPE="number" LENGTH="5" DECIMALS="2" NOTNULL="false" SEQUENCE="false" DEFAULT="0" COMMENT="Maximum percentage for this grade"/>
+        <FIELD NAME="gradepoints" TYPE="number" LENGTH="3" DECIMALS="2" NOTNULL="false" SEQUENCE="false" DEFAULT="0" COMMENT="GPA points (e.g., 4.0, 3.0)"/>
+        <FIELD NAME="quality" TYPE="char" LENGTH="50" NOTNULL="false" SEQUENCE="false" COMMENT="Quality descriptor (e.g., Excellent, Good)"/>
+        <FIELD NAME="sortorder" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Display order"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="schoolid" TYPE="foreign" FIELDS="schoolid" REFTABLE="gradereport_transcript_schools" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="school_sort" UNIQUE="false" FIELDS="schoolid, sortorder"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- Symbols and notations table -->
+    <TABLE NAME="gradereport_transcript_symbols" COMMENT="Stores custom symbols/notations per school">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="schoolid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Reference to school"/>
+        <FIELD NAME="symbol" TYPE="char" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Symbol notation (W, I, T, etc.)"/>
+        <FIELD NAME="meaning" TYPE="text" NOTNULL="true" SEQUENCE="false" COMMENT="Full meaning/description"/>
+        <FIELD NAME="sortorder" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Display order"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="schoolid" TYPE="foreign" FIELDS="schoolid" REFTABLE="gradereport_transcript_schools" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="school_sort" UNIQUE="false" FIELDS="schoolid, sortorder"/>
       </INDEXES>
     </TABLE>
   </TABLES>

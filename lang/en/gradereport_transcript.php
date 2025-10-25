@@ -657,3 +657,79 @@ $string['pickuppersonrequired'] = 'Pickup person name is required when marking a
 
 // Additional payment statuses
 $string['paymentstatus_help'] = 'Current payment status. Change to "Paid" once payment is received.';
+
+// Transfer credits (v1.0.15)
+$string['managetransfercredits'] = 'Manage Transfer Credits';
+$string['addtransfercredit'] = 'Add Transfer Credit';
+$string['edittransfercredit'] = 'Edit Transfer Credit';
+$string['deletetransfercredit'] = 'Delete Transfer Credit';
+$string['transfercreditadded'] = 'Transfer credit added successfully.';
+$string['transfercreditupdated'] = 'Transfer credit updated successfully.';
+$string['transfercreditdeleted'] = 'Transfer credit deleted successfully.';
+$string['deletetransfercreditconfirm'] = 'Are you sure you want to delete this transfer credit: {$a}?';
+$string['notransfercredits'] = 'No transfer credits have been added for this student.';
+$string['coursecode'] = 'Course Code';
+$string['coursecode_help'] = 'The course code from the originating institution (e.g., ENG-101).';
+$string['institution'] = 'Originating Institution';
+$string['institution_help'] = 'The name of the institution where this credit was earned.';
+$string['transfersymbol'] = 'Transfer Symbol';
+$string['transfersymbol_help'] = 'Symbol to display on transcript (default: T). This appears next to the grade.';
+$string['transfergrade'] = 'Grade';
+$string['transfergrade_help'] = 'Letter grade earned at the originating institution.';
+$string['transfercredits'] = 'Transfer Credits';
+$string['transferhours'] = 'Transfer Hours';
+$string['transfercredits_help'] = 'Number of credits for this transfer course.';
+$string['transferhours_help'] = 'Total hours for this transfer course.';
+$string['hours'] = 'Hours';
+$string['backtostudent'] = 'Back to Student Transcripts';
+$string['courseinformation'] = 'Course Information';
+$string['gradeinformation'] = 'Grading Information';
+
+// Grading scale (v1.0.15)
+$string['managegradescale'] = 'Manage Grading Scale';
+$string['addgradescale'] = 'Add Grade Scale Row';
+$string['editgradescale'] = 'Edit Grade Scale Row';
+$string['deletegradescale'] = 'Delete Grade Scale Row';
+$string['gradescaleadded'] = 'Grade scale row added successfully.';
+$string['gradescaleupdated'] = 'Grade scale row updated successfully.';
+$string['gradescaledeleted'] = 'Grade scale row deleted successfully.';
+$string['deletegradescaleconfirm'] = 'Are you sure you want to delete this grade scale row: {$a}?';
+$string['nogradescales'] = 'No grade scale rows have been added. Click "Add Grade Scale Row" to create the grading scale.';
+$string['lettergrade'] = 'Letter Grade';
+$string['lettergrade_help'] = 'The letter grade (e.g., A, B, C, D, F).';
+$string['minpercentage'] = 'Minimum Percentage';
+$string['minpercentage_help'] = 'The minimum percentage for this grade (e.g., 90 for an A).';
+$string['maxpercentage'] = 'Maximum Percentage';
+$string['maxpercentage_help'] = 'The maximum percentage for this grade (e.g., 100 for an A).';
+$string['gradepoints'] = 'Grade Points';
+$string['gradepoints_help'] = 'The GPA points for this grade (e.g., 4.0 for an A).';
+$string['quality'] = 'Quality Descriptor';
+$string['quality_help'] = 'The quality descriptor for this grade (e.g., Excellent, Good, Satisfactory).';
+$string['percentagerange'] = 'Percentage Range';
+$string['gradescaledefinition'] = 'Grade Scale Definition';
+$string['percentagerange_help'] = 'Percentage must be between 0 and 100.';
+$string['minmustbelessmax'] = 'Minimum percentage must be less than maximum percentage.';
+
+// Symbols (v1.0.15)
+$string['managesymbols'] = 'Manage Symbols & Notations';
+$string['addsymbol'] = 'Add Symbol';
+$string['editsymbol'] = 'Edit Symbol';
+$string['deletesymbol'] = 'Delete Symbol';
+$string['symboladded'] = 'Symbol added successfully.';
+$string['symbolupdated'] = 'Symbol updated successfully.';
+$string['symboldeleted'] = 'Symbol deleted successfully.';
+$string['deletesymbolconfirm'] = 'Are you sure you want to delete this symbol: {$a}?';
+$string['nosymbols'] = 'No symbols have been added. Click "Add Symbol" to create symbols.';
+$string['symbol'] = 'Symbol';
+$string['symbol_help'] = 'The symbol notation (e.g., W, I, T, P, AU, IP).';
+$string['meaning'] = 'Meaning';
+$string['meaning_help'] = 'The full meaning/description of this symbol.';
+$string['symboldefinition'] = 'Symbol Definition';
+
+// General
+$string['selectschool'] = 'Select School';
+$string['noschools'] = 'No schools have been created yet. Please add a school first.';
+$string['schoolidrequired'] = 'School ID is required.';
+$string['valuemustbepositive'] = 'Value must be positive.';
+$string['invalidprogramid'] = 'Invalid or missing program ID.';
+$string['missingrequiredparams'] = 'Required parameters are missing (programid and userid required).';

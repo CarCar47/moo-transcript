@@ -24,8 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2025102214;               // The current plugin version (Date: YYYYMMDDXX).
+$plugin->version   = 2025102500;               // The current plugin version (Date: YYYYMMDDXX).
 $plugin->requires  = 2025092600;               // Requires Moodle 5.1.
 $plugin->component = 'gradereport_transcript'; // Full name of the plugin (used for diagnostics).
 $plugin->maturity  = MATURITY_STABLE;          // Production-ready stable release.
-$plugin->release   = '1.0.14';                 // Fix: QR code verification always showing "Unofficial" instead of "Official".
+$plugin->release   = '1.0.15';                 // Add transfer credits and custom grading scales/symbols per school.

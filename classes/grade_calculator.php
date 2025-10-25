@@ -37,14 +37,82 @@ defined('MOODLE_INTERNAL') || die();
 class gradereport_transcript_grade_calculator {
 
     /**
-     * Convert letter grade to GPA points (4.0 scale)
+     * Convert letter grade to GPA points
      *
-     * Uses standard US grading scale:
-     * - A = 4.0
-     * - B = 3.0
-     * - C = 2.0
-     * - D = 1.0
-     * - F = 0.0
+     * Supports custom grading scales per school (loaded from database).
+     * Falls back to standard US 4.0 scale if no custom scale exists.
+     *
+     * Custom scales are loaded from gradereport_transcript_gradescale table.
+     *
+     * @param string $letter Letter grade (A, B, C, D, F, with optional +/-)
+     * @param int|null $schoolid School ID for custom scale (optional)
+     * @return float GPA points (0.0 - 4.0 by default, or custom max)
+     */
+    public function letter_to_gpa($letter, $schoolid = null) {
+        if (empty($letter)) {
+            return 0.0;
+        }
+
+        // Clean up the letter grade (remove whitespace, convert to uppercase).
+        $letter = strtoupper(trim($letter));
+
+        // Remove transfer symbol if present (e.g., "A T" -> "A").
+        $letter = trim(str_replace(['T', 'TR'], '', $letter));
+
+        // Handle special cases (incomplete, withdrawn, etc.).
+        $nongrades = ['W', 'WD', 'I', 'IP', 'N/A', 'NA', 'P', 'NP'];
+        if (in_array($letter, $nongrades)) {
+            return 0.0; // These don't count toward GPA.
+        }
+
+        // Load custom grade scale from database if schoolid provided.
+        if ($schoolid !== null) {
+            $customscale = $this->get_custom_grade_scale($schoolid);
+            if (!empty($customscale) && isset($customscale[$letter])) {
+                return $customscale[$letter];
+            }
+        }
+
+        // Fallback to default 4.0 scale.
+        return $this->default_letter_to_gpa($letter);
+    }
+
+    /**
+     * Get custom grade scale mapping for a school
+     *
+     * Loads grading scale from gradereport_transcript_gradescale table.
+     * Returns array mapping letter grades to GPA points.
+     *
+     * @param int $schoolid School ID
+     * @return array Mapping of letter grade => GPA points
+     */
+    protected function get_custom_grade_scale($schoolid) {
+        global $DB;
+
+        static $cache = [];
+
+        // Check cache.
+        if (isset($cache[$schoolid])) {
+            return $cache[$schoolid];
+        }
+
+        // Load from database.
+        $rows = $DB->get_records('gradereport_transcript_gradescale',
+            ['schoolid' => $schoolid], 'sortorder ASC');
+
+        $mapping = [];
+        foreach ($rows as $row) {
+            $mapping[$row->lettergrade] = (float)$row->gradepoints;
+        }
+
+        // Cache for future calls.
+        $cache[$schoolid] = $mapping;
+
+        return $mapping;
+    }
+
+    /**
+     * Default letter to GPA conversion (standard US 4.0 scale)
      *
      * Supports plus/minus variations:
      * - A+ = 4.0 (capped at 4.0)
@@ -54,23 +122,10 @@ class gradereport_transcript_grade_calculator {
      * - B  = 3.0
      * - etc.
      *
-     * @param string $letter Letter grade (A, B, C, D, F, with optional +/-)
+     * @param string $letter Letter grade
      * @return float GPA points (0.0 - 4.0)
      */
-    public function letter_to_gpa($letter) {
-        if (empty($letter)) {
-            return 0.0;
-        }
-
-        // Clean up the letter grade (remove whitespace, convert to uppercase).
-        $letter = strtoupper(trim($letter));
-
-        // Handle special cases (incomplete, withdrawn, etc.).
-        $nongrades = ['W', 'WD', 'I', 'IP', 'N/A', 'NA', 'P', 'NP'];
-        if (in_array($letter, $nongrades)) {
-            return 0.0; // These don't count toward GPA.
-        }
-
+    protected function default_letter_to_gpa($letter) {
         // Standard letter grade mapping.
         $mapping = [
             'A+' => 4.0,
@@ -102,9 +157,10 @@ class gradereport_transcript_grade_calculator {
      *
      * @param array $coursedata Array of course data objects (from transcript_generator)
      * @param string $weightfield Field to use as weight ('credits', 'hours', or 'all')
+     * @param int|null $schoolid School ID for custom grade scale (optional)
      * @return float Calculated GPA (0.0 - 4.0)
      */
-    public function calculate_weighted_gpa($coursedata, $weightfield = 'credits') {
+    public function calculate_weighted_gpa($coursedata, $weightfield = 'credits', $schoolid = null) {
         $totalpoints = 0.0;
         $totalweight = 0.0;
 
@@ -117,8 +173,8 @@ class gradereport_transcript_grade_calculator {
                 continue;
             }
 
-            // Convert letter to GPA points.
-            $gradepoints = $this->letter_to_gpa($gradeletter);
+            // Convert letter to GPA points (with custom scale support).
+            $gradepoints = $this->letter_to_gpa($gradeletter, $schoolid);
 
             // Skip grades that don't count (W, I, etc.).
             if ($gradepoints === 0.0 && !in_array(strtoupper($gradeletter), ['F', 'F+', 'F-'])) {
@@ -182,10 +238,11 @@ class gradereport_transcript_grade_calculator {
      *
      * @param string $gradeletter Letter grade
      * @param float $weight Credits or hours
+     * @param int|null $schoolid School ID for custom grade scale (optional)
      * @return float Quality points
      */
-    public function calculate_quality_points($gradeletter, $weight) {
-        $gradepoints = $this->letter_to_gpa($gradeletter);
+    public function calculate_quality_points($gradeletter, $weight, $schoolid = null) {
+        $gradepoints = $this->letter_to_gpa($gradeletter, $schoolid);
         return $gradepoints * $weight;
     }
 

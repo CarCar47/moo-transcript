@@ -245,5 +245,189 @@ function xmldb_gradereport_transcript_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2025102207, 'gradereport', 'transcript');
     }
 
+    // Upgrade to version 2025102500 - Add transfer credits and custom grading scales.
+    if ($oldversion < 2025102500) {
+
+        // Define table gradereport_transcript_transfer to be created.
+        $table = new xmldb_table('gradereport_transcript_transfer');
+
+        // Adding fields to table gradereport_transcript_transfer.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('programid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('coursecode', XMLDB_TYPE_CHAR, '50', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('coursename', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('grade', XMLDB_TYPE_CHAR, '10', null, null, null, null);
+        $table->add_field('credits', XMLDB_TYPE_NUMBER, '10, 2', null, null, null, '0');
+        $table->add_field('hours', XMLDB_TYPE_NUMBER, '10, 2', null, null, null, '0');
+        $table->add_field('transfersymbol', XMLDB_TYPE_CHAR, '10', null, null, null, 'T');
+        $table->add_field('institution', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        $table->add_field('sortorder', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+
+        // Adding keys to table gradereport_transcript_transfer.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('programid', XMLDB_KEY_FOREIGN, ['programid'], 'gradereport_transcript_programs', ['id']);
+
+        // Adding indexes to table gradereport_transcript_transfer.
+        $table->add_index('userid', XMLDB_INDEX_NOTUNIQUE, ['userid']);
+        $table->add_index('userid_program', XMLDB_INDEX_NOTUNIQUE, ['userid', 'programid']);
+
+        // Conditionally launch create table for gradereport_transcript_transfer.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Define table gradereport_transcript_gradescale to be created.
+        $table = new xmldb_table('gradereport_transcript_gradescale');
+
+        // Adding fields to table gradereport_transcript_gradescale.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('schoolid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('lettergrade', XMLDB_TYPE_CHAR, '5', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('minpercentage', XMLDB_TYPE_NUMBER, '5, 2', null, null, null, '0');
+        $table->add_field('maxpercentage', XMLDB_TYPE_NUMBER, '5, 2', null, null, null, '0');
+        $table->add_field('gradepoints', XMLDB_TYPE_NUMBER, '3, 2', null, null, null, '0');
+        $table->add_field('quality', XMLDB_TYPE_CHAR, '50', null, null, null, null);
+        $table->add_field('sortorder', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+
+        // Adding keys to table gradereport_transcript_gradescale.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('schoolid', XMLDB_KEY_FOREIGN, ['schoolid'], 'gradereport_transcript_schools', ['id']);
+
+        // Adding indexes to table gradereport_transcript_gradescale.
+        $table->add_index('school_sort', XMLDB_INDEX_NOTUNIQUE, ['schoolid', 'sortorder']);
+
+        // Conditionally launch create table for gradereport_transcript_gradescale.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Define table gradereport_transcript_symbols to be created.
+        $table = new xmldb_table('gradereport_transcript_symbols');
+
+        // Adding fields to table gradereport_transcript_symbols.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('schoolid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('symbol', XMLDB_TYPE_CHAR, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('meaning', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
+        $table->add_field('sortorder', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+
+        // Adding keys to table gradereport_transcript_symbols.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('schoolid', XMLDB_KEY_FOREIGN, ['schoolid'], 'gradereport_transcript_schools', ['id']);
+
+        // Adding indexes to table gradereport_transcript_symbols.
+        $table->add_index('school_sort', XMLDB_INDEX_NOTUNIQUE, ['schoolid', 'sortorder']);
+
+        // Conditionally launch create table for gradereport_transcript_symbols.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Create default grading scales and symbols for existing schools.
+        $schools = $DB->get_records('gradereport_transcript_schools');
+        foreach ($schools as $school) {
+            gradereport_transcript_create_default_gradescale($school->id);
+            gradereport_transcript_create_default_symbols($school->id);
+        }
+
+        // Transcript savepoint reached.
+        upgrade_plugin_savepoint(true, 2025102500, 'gradereport', 'transcript');
+    }
+
     return true;
+}
+
+/**
+ * Create default grading scale for a school
+ *
+ * Creates standard US 4.0 grading scale with A-F grades.
+ * Called during initial school creation or upgrade migration.
+ *
+ * @param int $schoolid School ID
+ */
+function gradereport_transcript_create_default_gradescale($schoolid) {
+    global $DB;
+
+    // Check if school already has a grading scale.
+    $existing = $DB->count_records('gradereport_transcript_gradescale', ['schoolid' => $schoolid]);
+    if ($existing > 0) {
+        return; // School already has a custom scale.
+    }
+
+    // Standard US grading scale (4.0 GPA system).
+    $grades = [
+        ['lettergrade' => 'A', 'minpercentage' => 90, 'maxpercentage' => 100, 'gradepoints' => 4.0, 'quality' => 'Excellent', 'sortorder' => 1],
+        ['lettergrade' => 'B', 'minpercentage' => 80, 'maxpercentage' => 89, 'gradepoints' => 3.0, 'quality' => 'Good', 'sortorder' => 2],
+        ['lettergrade' => 'C', 'minpercentage' => 70, 'maxpercentage' => 79, 'gradepoints' => 2.0, 'quality' => 'Satisfactory', 'sortorder' => 3],
+        ['lettergrade' => 'D', 'minpercentage' => 60, 'maxpercentage' => 69, 'gradepoints' => 1.0, 'quality' => 'Poor', 'sortorder' => 4],
+        ['lettergrade' => 'F', 'minpercentage' => 0, 'maxpercentage' => 59, 'gradepoints' => 0.0, 'quality' => 'Failing', 'sortorder' => 5],
+    ];
+
+    $timenow = time();
+
+    foreach ($grades as $grade) {
+        $record = (object)[
+            'schoolid' => $schoolid,
+            'lettergrade' => $grade['lettergrade'],
+            'minpercentage' => $grade['minpercentage'],
+            'maxpercentage' => $grade['maxpercentage'],
+            'gradepoints' => $grade['gradepoints'],
+            'quality' => $grade['quality'],
+            'sortorder' => $grade['sortorder'],
+            'timecreated' => $timenow,
+            'timemodified' => $timenow,
+        ];
+
+        $DB->insert_record('gradereport_transcript_gradescale', $record);
+    }
+}
+
+/**
+ * Create default symbols/notations for a school
+ *
+ * Creates standard academic symbols (W, I, T, P, AU, IP).
+ * Called during initial school creation or upgrade migration.
+ *
+ * @param int $schoolid School ID
+ */
+function gradereport_transcript_create_default_symbols($schoolid) {
+    global $DB;
+
+    // Check if school already has symbols.
+    $existing = $DB->count_records('gradereport_transcript_symbols', ['schoolid' => $schoolid]);
+    if ($existing > 0) {
+        return; // School already has custom symbols.
+    }
+
+    // Standard academic symbols.
+    $symbols = [
+        ['symbol' => 'W', 'meaning' => 'Withdrawn - Student officially withdrew from the course', 'sortorder' => 1],
+        ['symbol' => 'I', 'meaning' => 'Incomplete - Coursework not completed within the term', 'sortorder' => 2],
+        ['symbol' => 'T', 'meaning' => 'Transfer Credit - Credit earned at another institution', 'sortorder' => 3],
+        ['symbol' => 'P', 'meaning' => 'Pass - Credit earned in pass/fail course', 'sortorder' => 4],
+        ['symbol' => 'AU', 'meaning' => 'Audit - Course taken for no credit', 'sortorder' => 5],
+        ['symbol' => 'IP', 'meaning' => 'In Progress - Course currently being taken', 'sortorder' => 6],
+    ];
+
+    $timenow = time();
+
+    foreach ($symbols as $symboldata) {
+        $record = (object)[
+            'schoolid' => $schoolid,
+            'symbol' => $symboldata['symbol'],
+            'meaning' => $symboldata['meaning'],
+            'sortorder' => $symboldata['sortorder'],
+            'timecreated' => $timenow,
+            'timemodified' => $timenow,
+        ];
+
+        $DB->insert_record('gradereport_transcript_symbols', $record);
+    }
 }
