@@ -441,8 +441,10 @@ class gradereport_transcript_generator {
         // Footer with verification.
         $this->add_footer($pdf, $official);
 
-        // Academic information page (page 2) - shows grading scale for all transcripts.
-        $this->add_academic_info_page($pdf);
+        // Academic information page (page 2) - only for official transcripts.
+        if ($official) {
+            $this->add_academic_info_page($pdf);
+        }
     }
 
     /**
@@ -467,8 +469,10 @@ class gradereport_transcript_generator {
         // Footer with verification.
         $this->add_footer($pdf, $official);
 
-        // Academic information page (page 2) - shows grading scale for all transcripts.
-        $this->add_academic_info_page($pdf);
+        // Academic information page (page 2) - only for official transcripts.
+        if ($official) {
+            $this->add_academic_info_page($pdf);
+        }
     }
 
     /**
@@ -493,8 +497,10 @@ class gradereport_transcript_generator {
         // Footer with verification.
         $this->add_footer($pdf, $official);
 
-        // Academic information page (page 2) - shows grading scale for all transcripts.
-        $this->add_academic_info_page($pdf);
+        // Academic information page (page 2) - only for official transcripts.
+        if ($official) {
+            $this->add_academic_info_page($pdf);
+        }
     }
 
     /**
