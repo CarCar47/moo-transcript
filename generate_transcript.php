@@ -268,14 +268,22 @@ try {
                 $grandtotal += $rowtotal;
 
             } else if ($program->type === 'creditbased') {
-                $gradepoints = $calculator->letter_to_gpa($coursedata->gradeletter ?? '');
-                $qualitypoints = $gradepoints * $mapping->credits;
+                // Get school ID for custom grade scale support.
+                $schoolid = $program->schoolid ?? null;
+
+                $gradepoints = $calculator->letter_to_gpa($coursedata->gradeletter ?? '', $schoolid);
+
+                // Only include in GPA if grade exists and is not excluded (NULL means excluded).
+                if ($gradepoints !== null) {
+                    $qualitypoints = $gradepoints * $mapping->credits;
+                    $totalcredits += $mapping->credits;
+                    $totalpoints += $qualitypoints;
+                } else {
+                    $qualitypoints = 0;  // For display only.
+                }
 
                 echo html_writer::tag('td', number_format($mapping->credits, 1), ['class' => 'text-center']);
                 echo html_writer::tag('td', number_format($qualitypoints, 2), ['class' => 'text-center']);
-
-                $totalcredits += $mapping->credits;
-                $totalpoints += $qualitypoints;
 
             } else if ($program->type === 'ceu') {
                 echo html_writer::tag('td', number_format($mapping->ceuvalue, 2), ['class' => 'text-center']);
