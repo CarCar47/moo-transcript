@@ -274,7 +274,8 @@ try {
                 $gradepoints = $calculator->letter_to_gpa($coursedata->gradeletter ?? '', $schoolid);
 
                 // Only include in GPA if grade exists and is not excluded (NULL means excluded).
-                if ($gradepoints !== null) {
+                // Also skip zero grades that aren't F (same logic as grade_calculator).
+                if ($gradepoints !== null && !($gradepoints === 0.0 && !in_array(strtoupper($coursedata->gradeletter ?? ''), ['F', 'F+', 'F-']))) {
                     $qualitypoints = $gradepoints * $mapping->credits;
                     $totalcredits += $mapping->credits;
                     $totalpoints += $qualitypoints;
