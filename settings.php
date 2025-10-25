@@ -125,6 +125,14 @@ if ($hassiteconfig) {
         'gradereport/transcript:manage'
     ));
 
+    // Add policies management page (v1.0.28)
+    $ADMIN->add('gradereporttranscript', new admin_externalpage(
+        'gradereporttranscriptpolicies',
+        get_string('managepolicies', 'gradereport_transcript'),
+        new moodle_url('/grade/report/transcript/manage_policies.php'),
+        'gradereport/transcript:manage'
+    ));
+
     // Add pricing configuration page (Phase 6.2)
     $ADMIN->add('gradereporttranscript', new admin_externalpage(
         'gradereporttranscriptpricing',
