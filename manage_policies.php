@@ -29,17 +29,17 @@ defined('MOODLE_INTERNAL') || die();
 
 admin_externalpage_setup('gradereporttranscriptpolicies');
 
-$schoolid = required_param('schoolid', PARAM_INT);
+$schoolid = optional_param('schoolid', 0, PARAM_INT);
 $action = optional_param('action', '', PARAM_ALPHA);
 
-// Set page URL.
-$pageurl = new moodle_url('/grade/report/transcript/manage_policies.php', ['schoolid' => $schoolid]);
+// Set page URL with parameters.
+$pageurl = new moodle_url('/grade/report/transcript/manage_policies.php');
+if ($schoolid) {
+    $pageurl->param('schoolid', $schoolid);
+}
 $PAGE->set_url($pageurl);
 $PAGE->set_title(get_string('managepolicies', 'gradereport_transcript'));
 $PAGE->set_heading(get_string('managepolicies', 'gradereport_transcript'));
-
-// Verify school exists.
-$school = $DB->get_record('gradereport_transcript_schools', ['id' => $schoolid], '*', MUST_EXIST);
 
 // Default policy text.
 $defaults = [
@@ -47,8 +47,8 @@ $defaults = [
     'transfer_credit' => 'The acceptance and applicability of transfer credits and hours is subject to the sole discretion of the receiving institution. This institution makes no guarantee regarding the transferability of credits earned here to other institutions. Students are advised to consult with the receiving institution regarding their specific transfer credit policies before enrolling.',
 ];
 
-// Handle form submission.
-if ($action === 'save' && confirm_sesskey()) {
+// Handle form submission (only if schoolid is provided).
+if ($schoolid && $action === 'save' && confirm_sesskey()) {
     $coursenumbering = required_param('course_numbering', PARAM_RAW);
     $transfercredit = required_param('transfer_credit', PARAM_RAW);
 
@@ -104,16 +104,64 @@ if ($action === 'save' && confirm_sesskey()) {
         $DB->delete_records('gradereport_transcript_policies', ['id' => $existing->id]);
     }
 
-    redirect($pageurl, get_string('policiessaved', 'gradereport_transcript'), null,
+    $returnurl = new moodle_url('/grade/report/transcript/manage_policies.php', ['schoolid' => $schoolid]);
+    redirect($returnurl, get_string('policiessaved', 'gradereport_transcript'), null,
         \core\output\notification::NOTIFY_SUCCESS);
 }
 
 // Handle reset to defaults.
-if ($action === 'reset' && confirm_sesskey()) {
+if ($schoolid && $action === 'reset' && confirm_sesskey()) {
     $DB->delete_records('gradereport_transcript_policies', ['schoolid' => $schoolid]);
-    redirect($pageurl, get_string('policiesreset', 'gradereport_transcript'), null,
+    $returnurl = new moodle_url('/grade/report/transcript/manage_policies.php', ['schoolid' => $schoolid]);
+    redirect($returnurl, get_string('policiesreset', 'gradereport_transcript'), null,
         \core\output\notification::NOTIFY_SUCCESS);
 }
+
+// Display page header.
+echo $OUTPUT->header();
+
+// School selector dropdown.
+$schools = $DB->get_records('gradereport_transcript_schools', null, 'name ASC');
+if (empty($schools)) {
+    echo html_writer::div(
+        get_string('noschools', 'gradereport_transcript'),
+        'alert alert-warning'
+    );
+    echo $OUTPUT->footer();
+    exit;
+}
+
+echo html_writer::start_div('mb-3');
+echo html_writer::tag('label', get_string('selectschool', 'gradereport_transcript') . ': ', ['for' => 'schoolselector']);
+echo html_writer::start_tag('select', ['id' => 'schoolselector', 'class' => 'custom-select']);
+echo html_writer::tag('option', get_string('choosedots'), ['value' => '']);
+foreach ($schools as $school) {
+    $selected = ($school->id == $schoolid) ? ['selected' => 'selected'] : [];
+    echo html_writer::tag('option', format_string($school->name), array_merge(['value' => $school->id], $selected));
+}
+echo html_writer::end_tag('select');
+echo html_writer::end_div();
+
+// JavaScript for school selector.
+$PAGE->requires->js_amd_inline("
+    require(['jquery'], function($) {
+        $('#schoolselector').change(function() {
+            var schoolid = $(this).val();
+            if (schoolid) {
+                window.location.href = '" . (new moodle_url('/grade/report/transcript/manage_policies.php'))->out(false) . "?schoolid=' + schoolid;
+            }
+        });
+    });
+");
+
+// If no school selected, stop here.
+if (!$schoolid) {
+    echo $OUTPUT->footer();
+    exit;
+}
+
+// Verify school exists.
+$school = $DB->get_record('gradereport_transcript_schools', ['id' => $schoolid], '*', MUST_EXIST);
 
 // Load current policies (custom or default).
 $coursenumbering = $DB->get_field('gradereport_transcript_policies', 'content',
@@ -128,15 +176,15 @@ if (empty($transfercredit)) {
     $transfercredit = $defaults['transfer_credit'];
 }
 
-// Display page.
-echo $OUTPUT->header();
+// Display school-specific heading.
 echo $OUTPUT->heading(get_string('managepolicies', 'gradereport_transcript') . ': ' . format_string($school->name));
 
 // Instructions.
 echo html_writer::tag('p', get_string('policiesdescription', 'gradereport_transcript'));
 
 // Form.
-echo html_writer::start_tag('form', ['method' => 'post', 'action' => $pageurl->out()]);
+$formurl = new moodle_url('/grade/report/transcript/manage_policies.php', ['schoolid' => $schoolid]);
+echo html_writer::start_tag('form', ['method' => 'post', 'action' => $formurl->out()]);
 echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
 echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => 'save']);
 
@@ -169,7 +217,7 @@ echo html_writer::empty_tag('input', [
 ]);
 echo ' ';
 echo html_writer::link(
-    new moodle_url($pageurl, ['action' => 'reset', 'sesskey' => sesskey()]),
+    new moodle_url('/grade/report/transcript/manage_policies.php', ['schoolid' => $schoolid, 'action' => 'reset', 'sesskey' => sesskey()]),
     get_string('resettodefaults', 'gradereport_transcript'),
     ['class' => 'btn btn-secondary', 'onclick' => 'return confirm("' . get_string('resetconfirm', 'gradereport_transcript') . '");']
 );
