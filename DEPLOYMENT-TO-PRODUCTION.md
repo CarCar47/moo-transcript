@@ -2,26 +2,29 @@
 
 ## Repository Architecture
 
+**IMPORTANT:** This is a Moodle LMS plugin only. It is NOT part of the cor4edu-sms (Student Management System). The SMS and Moodle LMS are completely separate systems.
+
 This Moodle 5.1 deployment uses a **two-repository system** for managing the transcript plugin:
 
 ### 1. **Main Repository (lms-VM)**
-- **Location:** `C:\Users\c_clo\OneDrive\Personal\Coding\cor4edu-sms\moodle-VM`
+- **Location:** `C:\Users\c_clo\OneDrive\Personal\Coding\moodle-VM`
 - **GitHub:** https://github.com/CarCar47/lms-VM
-- **Purpose:** Complete Moodle 5.1 system with all core files and plugins
+- **Purpose:** Complete Moodle 5.1 LMS system with all core files and plugins
 - **Production VM:** Deployed to `/var/www/html/` on moodle-vm-demo (sms-edu-47)
+- **NOTE:** This is the Moodle Learning Management System, separate from the SMS
 
 ### 2. **Standalone Plugin Repository (moo-transcript)**
 - **Location:** `C:\Users\c_clo\OneDrive\Personal\Coding\transcript`
 - **GitHub:** https://github.com/CarCar47/moo-transcript
-- **Purpose:** Plugin development and version control
+- **Purpose:** Plugin development and version control for Moodle LMS only
 - **Plugin Type:** Grade Report (`gradereport_transcript`)
 
 ## Why Two Repositories?
 
 - **Easier Development:** Work on plugin in isolation without full Moodle system
-- **Version Control:** Separate plugin versioning from Moodle system
+- **Version Control:** Separate plugin versioning from Moodle LMS system
 - **Reusability:** Plugin can be shared/installed in other Moodle instances
-- **Testing:** Test plugin independently before integrating into main system
+- **Testing:** Test plugin independently before integrating into main Moodle system
 
 ## Moodle 5.1 Directory Structure
 
@@ -298,20 +301,20 @@ git push origin master
 ### Step 3: Sync to Main Moodle Repository
 ```bash
 # Remove .git from plugin folder if it exists (prevents nested repos)
-rm -rf "C:/Users/c_clo/OneDrive/Personal/Coding/cor4edu-sms/moodle-VM/public/grade/report/transcript/.git"
+rm -rf "C:/Users/c_clo/OneDrive/Personal/Coding/moodle-VM/public/grade/report/transcript/.git"
 
 # Copy all plugin files
 cp -r "C:/Users/c_clo/OneDrive/Personal/Coding/transcript/"* \
-      "C:/Users/c_clo/OneDrive/Personal/Coding/cor4edu-sms/moodle-VM/public/grade/report/transcript/"
+      "C:/Users/c_clo/OneDrive/Personal/Coding/moodle-VM/public/grade/report/transcript/"
 
 # Clean up temp files
-rm -f "C:/Users/c_clo/OneDrive/Personal/Coding/cor4edu-sms/moodle-VM/public/grade/report/transcript/transcript.tar.gz"
-rm -f "C:/Users/c_clo/OneDrive/Personal/Coding/cor4edu-sms/moodle-VM/public/grade/report/transcript/nul"
+rm -f "C:/Users/c_clo/OneDrive/Personal/Coding/moodle-VM/public/grade/report/transcript/transcript.tar.gz"
+rm -f "C:/Users/c_clo/OneDrive/Personal/Coding/moodle-VM/public/grade/report/transcript/nul"
 ```
 
 ### Step 4: Commit to Main Repository
 ```bash
-cd C:\Users\c_clo\OneDrive\Personal\Coding\cor4edu-sms\moodle-VM
+cd C:\Users\c_clo\OneDrive\Personal\Coding\moodle-VM
 git add public/grade/report/transcript/
 git commit -m "feat: Update transcript plugin to vX.X.X"
 git push origin main
@@ -365,7 +368,7 @@ gcloud compute ssh moodle-vm-demo --project=sms-edu-47 --zone=us-central1-a \
 ### Step 5c: Deploy Plugin Files to Production VM
 ```bash
 # Option A: Deploy entire moodle-VM (if other changes exist)
-cd C:\Users\c_clo\OneDrive\Personal\Coding\cor4edu-sms\moodle-VM
+cd C:\Users\c_clo\OneDrive\Personal\Coding\moodle-VM
 tar -czf moodle-vm.tar.gz --exclude='.git' .
 gcloud compute scp moodle-vm.tar.gz moodle-vm-demo:/tmp/ --project=sms-edu-47 --zone=us-central1-a
 gcloud compute ssh moodle-vm-demo --project=sms-edu-47 --zone=us-central1-a \

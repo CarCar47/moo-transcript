@@ -1,5 +1,13 @@
 # Moodle Academic Transcript & CEU Certificate System
 
+> **⚠️ IMPORTANT - System Separation Notice**
+>
+> This is a **Moodle LMS Plugin** only. It is NOT part of the cor4edu-sms (Student Management System).
+> - **This Plugin** is for the **Moodle LMS** (located at `C:\Users\c_clo\OneDrive\Personal\Coding\moodle-VM`)
+> - **Separate System:** cor4edu-sms (located at `C:\Users\c_clo\OneDrive\Personal\Coding\cor4edu-sms`)
+>
+> These are completely independent systems with separate builds, deployments, and repositories.
+
 **Plugin Type:** Grade Report (`gradereport_transcript`)
 **Moodle Version:** 5.1+
 **PHP Version:** 8.2+
