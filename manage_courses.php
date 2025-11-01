@@ -275,23 +275,13 @@ if ($programid) {
     }
 
     // v1.0.33: "Add New Mapping" form section using moodleform.
-    $categorymapping_enabled = get_config('gradereport_transcript', 'enablecategorymapping');
-
-    if (!empty($courses)) {
+    // Note: Form instance $mappingform was already created at line 156 (before page output) for submission handling.
+    if (isset($mappingform)) {
         echo html_writer::start_div('card mb-4');
         echo html_writer::start_div('card-body');
         echo html_writer::tag('h5', get_string('addmapping', 'gradereport_transcript'), ['class' => 'card-title']);
 
-        // Create moodleform for adding mappings.
-        $formurl = new moodle_url('/grade/report/transcript/manage_courses.php', ['programid' => $programid]);
-        $customdata = [
-            'programid' => $programid,
-            'courses' => $courses,
-            'categorymapping_enabled' => $categorymapping_enabled,
-        ];
-        $mappingform = new \gradereport_transcript\forms\course_mapping_form($formurl, $customdata);
-
-        // Display the form.
+        // Display the form (already instantiated at line 156).
         $mappingform->display();
 
         echo html_writer::end_div(); // card-body
