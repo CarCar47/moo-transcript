@@ -24,8 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2025110110;               // The current plugin version (Date: YYYYMMDDXX).
+$plugin->version   = 2025110111;               // The current plugin version (Date: YYYYMMDDXX).
 $plugin->requires  = 2025092600;               // Requires Moodle 5.1.
 $plugin->component = 'gradereport_transcript'; // Full name of the plugin (used for diagnostics).
 $plugin->maturity  = MATURITY_BETA;            // v1.0.33: BETA - multiple category mappings per course.
-$plugin->release   = '1.0.33';                 // FIX: Fixed duplicate moodleform instance - form only created once at line 156.
+$plugin->release   = '1.0.33';                 // FIX: Category dropdown now populates correctly - fixed JavaScript element IDs to use Moodle's id_{elementname} pattern.

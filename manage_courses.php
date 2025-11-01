@@ -769,16 +769,16 @@ if ($programid) {
             });
 
             // v1.0.33: Add Mapping form - handle mapping type change.
-            const addMappingTypeSelect = document.getElementById('add-mapping-type');
-            const addCourseSelect = document.getElementById('add-course-select');
-            const addCategorySelect = document.getElementById('add-category-select');
+            // Use correct Moodle-generated IDs: moodleform uses id_{elementname} pattern.
+            const addMappingTypeSelect = document.getElementById('id_mappingtype');
+            const addCourseSelect = document.getElementById('id_courseid');
+            const addCategorySelect = document.getElementById('id_categoryid');
 
             if (addMappingTypeSelect && addCourseSelect && addCategorySelect) {
                 // Handle mapping type change in Add Mapping form.
                 addMappingTypeSelect.addEventListener('change', function() {
                     if (this.value === 'category') {
-                        addCategorySelect.style.display = 'block';
-
+                        // Moodle's hideIf handles visibility, but we need to populate options.
                         // Fetch categories for selected course.
                         const courseid = addCourseSelect.value;
                         if (courseid && courseid !== '') {
@@ -786,8 +786,6 @@ if ($programid) {
                                 populateCategorySelect(addCategorySelect, categories, '');
                             });
                         }
-                    } else {
-                        addCategorySelect.style.display = 'none';
                     }
                 });
 

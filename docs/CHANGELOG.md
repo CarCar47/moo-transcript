@@ -17,6 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Removed form `id` attribute and JavaScript submit event listener
   - Now uses server-side validation only (matches all other forms in plugin)
   - Server-side validation already handles all error cases with proper redirects
+- **Category dropdown not populating** - Fixed JavaScript element ID selectors (version 2025110111)
+  - Changed from custom IDs to Moodle's standard `id_{elementname}` pattern
+  - JavaScript now correctly finds form elements: `id_courseid`, `id_mappingtype`, `id_categoryid`
+  - AJAX category loading now works when course is selected and mapping type is "category"
+  - Follows official Moodle Forms API documentation
 
 ### Changed
 - **Redesigned manage_courses.php UI**
