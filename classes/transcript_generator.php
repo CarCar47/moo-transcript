@@ -436,7 +436,7 @@ class gradereport_transcript_generator {
         $this->add_program_info($pdf);
 
         // Course table with hours.
-        $this->add_hourbased_courses_table($pdf);
+        $this->add_hourbased_courses_table($pdf, $official);
 
         // Footer with verification.
         $this->add_footer($pdf, $official);
@@ -464,7 +464,7 @@ class gradereport_transcript_generator {
         $this->add_program_info($pdf);
 
         // Course table with credits and GPA.
-        $this->add_creditbased_courses_table($pdf);
+        $this->add_creditbased_courses_table($pdf, $official);
 
         // Footer with verification.
         $this->add_footer($pdf, $official);
@@ -755,8 +755,18 @@ class gradereport_transcript_generator {
      * Add hour-based courses table
      *
      * @param pdf $pdf PDF object
+     * @param bool $official Whether this is official transcript
      */
-    protected function add_hourbased_courses_table($pdf) {
+    protected function add_hourbased_courses_table($pdf, $official = false) {
+        // Add disclaimer for unofficial transcripts at top.
+        if (!$official) {
+            $pdf->SetFont('helvetica', 'BI', 10);
+            $pdf->SetTextColor(204, 0, 0);  // Red color.
+            $pdf->Cell(0, 7, get_string('unofficialdisclaimer', 'gradereport_transcript'), 0, 1, 'C');
+            $pdf->SetTextColor(0, 0, 0);  // Reset to black.
+            $pdf->Ln(3);
+        }
+
         $grades = $this->get_student_grades();
 
         // Separate transfer credits from institutional courses (v1.0.19).
@@ -905,8 +915,18 @@ class gradereport_transcript_generator {
      * Add credit-based courses table
      *
      * @param pdf $pdf PDF object
+     * @param bool $official Whether this is official transcript
      */
-    protected function add_creditbased_courses_table($pdf) {
+    protected function add_creditbased_courses_table($pdf, $official = false) {
+        // Add disclaimer for unofficial transcripts at top.
+        if (!$official) {
+            $pdf->SetFont('helvetica', 'BI', 10);
+            $pdf->SetTextColor(204, 0, 0);  // Red color.
+            $pdf->Cell(0, 7, get_string('unofficialdisclaimer', 'gradereport_transcript'), 0, 1, 'C');
+            $pdf->SetTextColor(0, 0, 0);  // Reset to black.
+            $pdf->Ln(3);
+        }
+
         $grades = $this->get_student_grades();
 
         // Separate transfer credits from institutional courses.
@@ -943,36 +963,63 @@ class gradereport_transcript_generator {
         $transfertotalpoints = 0;
 
         if (!empty($transfercredits)) {
-            // Transfer credits section header.
-            $html .= '<tr style="background-color:#EEEEEE;font-weight:bold;">';
-            $html .= '<td colspan="4" align="left">TRANSFER CREDITS</td>';
-            $html .= '</tr>';
-
+            // Group transfer credits by institution.
+            $byinstitution = [];
             foreach ($transfercredits as $coursedata) {
-                $mapping = $coursedata->mapping;
-                $course = $coursedata->course;
+                $institution = $coursedata->mapping->institution ?? 'Unknown Institution';
+                if (!isset($byinstitution[$institution])) {
+                    $byinstitution[$institution] = [];
+                }
+                $byinstitution[$institution][] = $coursedata;
+            }
 
-                // AACRAO Standard: Transfer credits do not generate quality points for institutional GPA.
-                $coursename = htmlspecialchars($course->shortname . ' - ' . $course->fullname);
+            // Display each institution's credits separately.
+            foreach ($byinstitution as $institution => $institutioncredits) {
+                // Institution section header.
+                $html .= '<tr style="background-color:#EEEEEE;font-weight:bold;">';
+                $html .= '<td colspan="4" align="left">TRANSFER CREDITS FROM: ' . htmlspecialchars(strtoupper($institution)) . '</td>';
+                $html .= '</tr>';
 
-                $html .= '<tr>';
-                $html .= '<td align="left">' . $coursename . '</td>';
-                $html .= '<td align="center">' . htmlspecialchars($coursedata->gradeletter ?? 'N/A') . '</td>';
-                $html .= '<td align="center">' . number_format($mapping->credits, 1) . '</td>';
+                $institutiontotalcredits = 0;
+
+                foreach ($institutioncredits as $coursedata) {
+                    $mapping = $coursedata->mapping;
+                    $course = $coursedata->course;
+
+                    // AACRAO Standard: Transfer credits do not generate quality points for institutional GPA.
+                    $coursename = htmlspecialchars($course->shortname . ' - ' . $course->fullname);
+
+                    $html .= '<tr>';
+                    $html .= '<td align="left">' . $coursename . '</td>';
+                    $html .= '<td align="center">' . htmlspecialchars($coursedata->gradeletter ?? 'N/A') . '</td>';
+                    $html .= '<td align="center">' . number_format($mapping->credits, 1) . '</td>';
+                    $html .= '<td align="center">N/A</td>';
+                    $html .= '</tr>';
+
+                    $institutiontotalcredits += $mapping->credits;
+                    // Do not add to $transfertotalpoints - transfer credits excluded from quality points.
+                }
+
+                // Subtotal for this institution.
+                $html .= '<tr style="font-weight:bold;background-color:#F5F5F5;">';
+                $html .= '<td align="right">' . htmlspecialchars($institution) . ' Subtotal</td>';
+                $html .= '<td align="center"></td>';
+                $html .= '<td align="center">' . number_format($institutiontotalcredits, 1) . '</td>';
                 $html .= '<td align="center">N/A</td>';
                 $html .= '</tr>';
 
-                $transfertotalcredits += $mapping->credits;
-                // Do not add to $transfertotalpoints - transfer credits excluded from quality points.
+                $transfertotalcredits += $institutiontotalcredits;
             }
 
-            // Transfer credits subtotal.
-            $html .= '<tr style="font-weight:bold;background-color:#F5F5F5;">';
-            $html .= '<td align="right">Transfer Credits Subtotal</td>';
-            $html .= '<td align="center"></td>';
-            $html .= '<td align="center">' . number_format($transfertotalcredits, 1) . '</td>';
-            $html .= '<td align="center">N/A</td>';
-            $html .= '</tr>';
+            // Grand total for all transfer credits (if multiple institutions).
+            if (count($byinstitution) > 1) {
+                $html .= '<tr style="font-weight:bold;background-color:#DDDDDD;">';
+                $html .= '<td align="right">All Transfer Credits Total</td>';
+                $html .= '<td align="center"></td>';
+                $html .= '<td align="center">' . number_format($transfertotalcredits, 1) . '</td>';
+                $html .= '<td align="center">N/A</td>';
+                $html .= '</tr>';
+            }
         }
 
         // Institutional credits section.
@@ -1112,22 +1159,9 @@ class gradereport_transcript_generator {
             $pdf->SetFont('helvetica', '', 8);
             $pdf->Cell(90, 5, 'Issue Date: ' . date('F d, Y'), 0, 0, 'L');
             $pdf->Cell(90, 5, 'Verification Code: ' . $this->verificationcode, 0, 1, 'R');
-
-            // Check if signature area is enabled.
-            $showsignature = get_config('gradereport_transcript', 'showsignature');
-            if ($showsignature === false) {
-                // Default to enabled if setting not configured.
-                $showsignature = 1;
-            }
-
-            if ($showsignature) {
-                $pdf->Ln(5);
-
-                // v1.0.20: Removed signature/seal footer (QR code provides verification).
-            }
         } else {
             $pdf->SetFont('helvetica', 'I', 9);
-            $pdf->Cell(0, 6, 'This is an unofficial transcript. Not valid for official use.', 0, 1, 'C');
+            $pdf->Cell(0, 6, get_string('unofficialdisclaimer', 'gradereport_transcript'), 0, 1, 'C');
         }
     }
 
@@ -1213,6 +1247,26 @@ class gradereport_transcript_generator {
     }
 
     /**
+     * Check if minimum space is available on current page, add new page if needed
+     *
+     * @param pdf $pdf PDF object
+     * @param float $requiredspace Required space in millimeters
+     * @return bool True if new page was added, false if staying on current page
+     */
+    protected function ensure_minimum_space($pdf, $requiredspace) {
+        $currentY = $pdf->GetY();
+        $pageHeight = 297;  // A4 page height in mm
+        $bottomMargin = 20;
+        $remainingSpace = $pageHeight - $bottomMargin - $currentY;
+
+        if ($remainingSpace < $requiredspace) {
+            $pdf->AddPage();
+            return true;
+        }
+        return false;
+    }
+
+    /**
      * Add academic information page (Page 2) - only for official transcripts
      *
      * @param pdf $pdf PDF object
@@ -1220,8 +1274,25 @@ class gradereport_transcript_generator {
     protected function add_academic_info_page($pdf) {
         global $DB;
 
-        // Add new page for academic information
-        $pdf->AddPage();
+        // Smart pagination: Only add new page if academic info won't fit on current page.
+        // Estimate minimum space needed for academic information sections:
+        // - Page heading: ~15mm
+        // - Grading scale table: ~45mm (varies by school, avg 8 grades)
+        // - GPA calculation: ~15mm (credit-based only)
+        // - Symbols table: ~30mm (varies by school, avg 6 symbols)
+        // - Course numbering policy: ~15mm
+        // - Transfer credit policy: ~15mm
+        // - Verification section: ~20mm
+        // Total estimated: ~155mm (conservative for longest case)
+        // Minimum for partial content: ~80mm
+        $minimumSpaceNeeded = 80;  // If less than 80mm, start fresh page
+
+        $newPageAdded = $this->ensure_minimum_space($pdf, $minimumSpaceNeeded);
+
+        if (!$newPageAdded) {
+            // Staying on current page - add visual separator
+            $pdf->Ln(10);
+        }
 
         // Page heading
         $pdf->SetFont('helvetica', 'B', 12);
@@ -1282,6 +1353,8 @@ class gradereport_transcript_generator {
 
         // Section 2: GPA Calculation
         if ($this->program->type === 'creditbased') {
+            // Ensure minimum space for GPA calculation section (~20mm)
+            $this->ensure_minimum_space($pdf, 20);
             $pdf->SetFont('helvetica', 'B', 10);
             $pdf->Cell(0, 7, 'GRADE POINT AVERAGE (GPA) CALCULATION', 0, 1, 'L');
             $pdf->SetFont('helvetica', '', 9);
@@ -1290,6 +1363,9 @@ class gradereport_transcript_generator {
         }
 
         // Section 3: Symbols and Notations (from database - custom per school)
+        // Ensure minimum space for symbols table (~35mm for typical 6 symbols)
+        $this->ensure_minimum_space($pdf, 35);
+
         $pdf->SetFont('helvetica', 'B', 10);
         $pdf->Cell(0, 7, 'SYMBOLS AND NOTATIONS', 0, 1, 'L');
         $pdf->SetFont('helvetica', '', 9);
@@ -1336,6 +1412,9 @@ class gradereport_transcript_generator {
         $pdf->Ln(5);
 
         // Section 4: Course Numbering System
+        // Ensure minimum space for course numbering policy (~20mm)
+        $this->ensure_minimum_space($pdf, 20);
+
         $pdf->SetFont('helvetica', 'B', 10);
         $pdf->Cell(0, 7, 'COURSE NUMBERING SYSTEM', 0, 1, 'L');
         $pdf->SetFont('helvetica', '', 9);
@@ -1353,6 +1432,9 @@ class gradereport_transcript_generator {
         $pdf->Ln(3);
 
         // Section 5: Transfer Credit Policy
+        // Ensure minimum space for transfer credit policy (~20mm)
+        $this->ensure_minimum_space($pdf, 20);
+
         $pdf->SetFont('helvetica', 'B', 10);
         $pdf->Cell(0, 7, 'TRANSFER CREDIT POLICY', 0, 1, 'L');
         $pdf->SetFont('helvetica', '', 9);
@@ -1371,6 +1453,9 @@ class gradereport_transcript_generator {
 
         // v1.0.20: Section 6: Transcript Verification (moved from Page 1)
         if (!empty($this->verificationcode)) {
+            // Ensure minimum space for verification section (~25mm)
+            $this->ensure_minimum_space($pdf, 25);
+
             global $CFG;
 
             $pdf->SetFont('helvetica', 'B', 10);

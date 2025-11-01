@@ -24,8 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2025102522;               // The current plugin version (Date: YYYYMMDDXX).
+$plugin->version   = 2025103101;               // The current plugin version (Date: YYYYMMDDXX).
 $plugin->requires  = 2025092600;               // Requires Moodle 5.1.
 $plugin->component = 'gradereport_transcript'; // Full name of the plugin (used for diagnostics).
 $plugin->maturity  = MATURITY_STABLE;          // Production-ready stable release.
-$plugin->release   = '1.0.28';                 // FEATURE: Customizable academic policies (course numbering & transfer credit text).
+$plugin->release   = '1.0.31';                 // FIX: Signature setting removal, transfer credit quality points, allowunofficial enforcement, unofficial disclaimers, pickup person field unblock.

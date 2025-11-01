@@ -59,13 +59,6 @@ if ($hassiteconfig) {
         1  // Default: enabled
     ));
 
-    $settingspage->add(new admin_setting_configcheckbox(
-        'gradereport_transcript/showsignature',
-        get_string('showsignature', 'gradereport_transcript'),
-        get_string('showsignature_help', 'gradereport_transcript'),
-        1  // Default: enabled
-    ));
-
     // Add student transcript viewer (FIRST in menu - most used feature)
     $ADMIN->add('gradereporttranscript', new admin_externalpage(
         'gradereporttranscriptviewstudents',

@@ -345,8 +345,8 @@ $string['allowunofficial_help'] = 'When enabled, students can download unofficia
 $string['transcriptlinkinreports'] = 'Show transcript link in grade reports';
 $string['transcriptlinkinreports_help'] = 'When enabled, a link to the transcript report will appear when viewing user grade reports. This provides quick access from the gradebook.';
 $string['studentaccessdisabled'] = 'Student access to transcripts is currently disabled. Please contact your site administrator for assistance.';
-$string['showsignature'] = 'Show signature and seal area on official transcripts';
-$string['showsignature_help'] = 'When enabled, official transcripts will include a signature line and official seal/stamp area at the bottom of the document. Disable this if you do not want these areas to appear on the PDF.';
+$string['unofficialaccessdisabled'] = 'Unofficial transcript access is currently disabled. Please contact your site administrator to request an official transcript.';
+$string['unofficialdisclaimer'] = 'These grades are not official nor final grades, and are subject to change.';
 
 // Admin student transcript viewer strings.
 $string['viewstudenttranscripts'] = 'View Student Transcripts';

@@ -186,41 +186,51 @@ if (empty($programs)) {
         // Get pricing for this program's school.
         $pricing = \gradereport_transcript\helper::get_pricing($program->schoolid);
 
-        // Button 1: View Transcript (always available).
-        $viewurl = new moodle_url('/grade/report/transcript/generate_transcript.php', [
-            'programid' => $program->id,
-            'userid' => $userid,
-            'official' => 0
-        ]);
-        echo html_writer::link($viewurl, get_string('viewtranscript', 'gradereport_transcript'),
-            ['class' => 'btn btn-sm btn-primary']);
+        // Check if unofficial transcripts are allowed.
+        $allowunofficial = get_config('gradereport_transcript', 'allowunofficial');
+        if ($allowunofficial === false) {
+            $allowunofficial = 1;  // Default to enabled if not set.
+        }
 
-        echo ' ';
-
-        if ($pricing) {
-            // Button 2: Download Unofficial OR Order Unofficial (conditional based on pricing).
-            if ($pricing->unofficialprice > 0) {
-                // Unofficial costs money - show ORDER button.
-                $orderunofficialurl = new moodle_url('/grade/report/transcript/request_transcript.php', [
-                    'programid' => $program->id,
-                    'type' => 'unofficial'
-                ]);
-                echo html_writer::link($orderunofficialurl, get_string('orderunofficial', 'gradereport_transcript'),
-                    ['class' => 'btn btn-sm btn-warning']);
-            } else {
-                // Unofficial is free - show DOWNLOAD button.
-                $unofficialurl = new moodle_url('/grade/report/transcript/generate_transcript.php', [
-                    'programid' => $program->id,
-                    'userid' => $userid,
-                    'official' => 0,
-                    'action' => 'download',
-                    'sesskey' => sesskey()
-                ]);
-                echo html_writer::link($unofficialurl, get_string('downloadunofficial', 'gradereport_transcript'),
-                    ['class' => 'btn btn-sm btn-secondary']);
-            }
+        // Button 1: View Transcript (only if unofficial allowed).
+        if ($allowunofficial) {
+            $viewurl = new moodle_url('/grade/report/transcript/generate_transcript.php', [
+                'programid' => $program->id,
+                'userid' => $userid,
+                'official' => 0
+            ]);
+            echo html_writer::link($viewurl, get_string('viewtranscript', 'gradereport_transcript'),
+                ['class' => 'btn btn-sm btn-primary']);
 
             echo ' ';
+        }
+
+        if ($pricing) {
+            // Button 2: Download Unofficial OR Order Unofficial (only if unofficial allowed).
+            if ($allowunofficial) {
+                if ($pricing->unofficialprice > 0) {
+                    // Unofficial costs money - show ORDER button.
+                    $orderunofficialurl = new moodle_url('/grade/report/transcript/request_transcript.php', [
+                        'programid' => $program->id,
+                        'type' => 'unofficial'
+                    ]);
+                    echo html_writer::link($orderunofficialurl, get_string('orderunofficial', 'gradereport_transcript'),
+                        ['class' => 'btn btn-sm btn-warning']);
+                } else {
+                    // Unofficial is free - show DOWNLOAD button.
+                    $unofficialurl = new moodle_url('/grade/report/transcript/generate_transcript.php', [
+                        'programid' => $program->id,
+                        'userid' => $userid,
+                        'official' => 0,
+                        'action' => 'download',
+                        'sesskey' => sesskey()
+                    ]);
+                    echo html_writer::link($unofficialurl, get_string('downloadunofficial', 'gradereport_transcript'),
+                        ['class' => 'btn btn-sm btn-secondary']);
+                }
+
+                echo ' ';
+            }
 
             // Button 3: Order Official (always available for students).
             $orderofficialurl = new moodle_url('/grade/report/transcript/request_transcript.php', [

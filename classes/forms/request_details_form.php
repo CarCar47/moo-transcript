@@ -145,19 +145,16 @@ class request_details_form extends \moodleform {
         if ($request->deliverymethod === 'postal') {
             $mform->hideIf('trackingnumber', 'deliverystatus', 'eq', 'pending');
         } else {
-            $mform->hardFreeze('trackingnumber');
+            // Use disabledIf instead of hardFreeze for better form flexibility.
+            $mform->disabledIf('trackingnumber', 'deliverystatus', 'neq', '');
         }
 
-        // Pickup person name (for pickup delivery only).
+        // Pickup person name (show only when delivery status is "pickedup").
         $mform->addElement('text', 'pickupperson', get_string('pickupperson', 'gradereport_transcript'), ['size' => 60]);
         $mform->setType('pickupperson', PARAM_TEXT);
         $mform->addHelpButton('pickupperson', 'pickupperson', 'gradereport_transcript');
-        // Only show for pickup delivery method.
-        if ($request->deliverymethod === 'pickup') {
-            $mform->hideIf('pickupperson', 'deliverystatus', 'neq', 'pickedup');
-        } else {
-            $mform->hardFreeze('pickupperson');
-        }
+        // Show only when delivery status is set to "pickedup" (dynamic control).
+        $mform->hideIf('pickupperson', 'deliverystatus', 'neq', 'pickedup');
 
         // Delivery notes.
         $mform->addElement('textarea', 'deliverynotes', get_string('deliverynotes', 'gradereport_transcript'),

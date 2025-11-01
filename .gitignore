@@ -5,6 +5,7 @@
 .idea/
 *.sublime-*
 .phpintel/
+.phpstorm.meta.php
 
 # OS
 .DS_Store
@@ -28,11 +29,29 @@ composer.lock
 # Testing
 coverage/
 .phpunit.result.cache
+phpunit.xml
 
-# Build
+# Build artifacts (DO NOT COMMIT)
 dist/
+build/
+releases/
+archive/
 *.zip
+*.tar.gz
+*.tgz
+
+# Debug/Patch files
+*.patch
+*.diff
+debug*.php
+test*.php
+temp*.php
+
+# Deployment
+deploy/
+backups/
 
 # Logs
 *.log
 error_log
+debug.log

@@ -60,6 +60,17 @@ if ($userid == $USER->id && !is_siteadmin()) {
         if (!$enablestudents) {
             throw new \moodle_exception('studentaccessdisabled', 'gradereport_transcript');
         }
+
+        // Check if unofficial transcript viewing is allowed (when viewing unofficial).
+        if (!$official) {
+            $allowunofficial = get_config('gradereport_transcript', 'allowunofficial');
+            if ($allowunofficial === false) {
+                $allowunofficial = 1;  // Default enabled
+            }
+            if (!$allowunofficial) {
+                throw new \moodle_exception('unofficialaccessdisabled', 'gradereport_transcript');
+            }
+        }
     }
 }
 
@@ -129,6 +140,14 @@ echo $OUTPUT->header();
 
 // Page heading.
 echo $OUTPUT->heading(get_string('generatetranscript', 'gradereport_transcript'));
+
+// Show disclaimer for unofficial transcripts at the top.
+if (!$official) {
+    echo html_writer::div(
+        html_writer::tag('strong', get_string('unofficialdisclaimer', 'gradereport_transcript')),
+        'alert alert-warning text-center'
+    );
+}
 
 // Show student information.
 echo html_writer::start_div('transcript-student-info alert alert-info');
@@ -271,20 +290,28 @@ try {
                 // Get school ID for custom grade scale support.
                 $schoolid = $program->schoolid ?? null;
 
-                $gradepoints = $calculator->letter_to_gpa($coursedata->gradeletter ?? '', $schoolid);
-
-                // Only include in GPA if grade exists and is not excluded (NULL means excluded).
-                // Also skip zero grades that aren't F (same logic as grade_calculator).
-                if ($gradepoints !== null && !($gradepoints === 0.0 && !in_array(strtoupper($coursedata->gradeletter ?? ''), ['F', 'F+', 'F-']))) {
-                    $qualitypoints = $gradepoints * $mapping->credits;
-                    $totalcredits += $mapping->credits;
-                    $totalpoints += $qualitypoints;
+                // AACRAO Standard: Transfer credits do not generate quality points for institutional GPA.
+                if (isset($coursedata->istransfer) && $coursedata->istransfer === true) {
+                    // Transfer credit - show N/A for quality points.
+                    echo html_writer::tag('td', number_format($mapping->credits, 1), ['class' => 'text-center']);
+                    echo html_writer::tag('td', 'N/A', ['class' => 'text-center']);
                 } else {
-                    $qualitypoints = 0;  // For display only.
-                }
+                    // Institutional credit - calculate quality points.
+                    $gradepoints = $calculator->letter_to_gpa($coursedata->gradeletter ?? '', $schoolid);
 
-                echo html_writer::tag('td', number_format($mapping->credits, 1), ['class' => 'text-center']);
-                echo html_writer::tag('td', number_format($qualitypoints, 2), ['class' => 'text-center']);
+                    // Only include in GPA if grade exists and is not excluded (NULL means excluded).
+                    // Also skip zero grades that aren't F (same logic as grade_calculator).
+                    if ($gradepoints !== null && !($gradepoints === 0.0 && !in_array(strtoupper($coursedata->gradeletter ?? ''), ['F', 'F+', 'F-']))) {
+                        $qualitypoints = $gradepoints * $mapping->credits;
+                        $totalcredits += $mapping->credits;
+                        $totalpoints += $qualitypoints;
+                    } else {
+                        $qualitypoints = 0;  // For display only.
+                    }
+
+                    echo html_writer::tag('td', number_format($mapping->credits, 1), ['class' => 'text-center']);
+                    echo html_writer::tag('td', number_format($qualitypoints, 2), ['class' => 'text-center']);
+                }
 
             } else if ($program->type === 'ceu') {
                 echo html_writer::tag('td', number_format($mapping->ceuvalue, 2), ['class' => 'text-center']);
@@ -346,22 +373,38 @@ try {
     );
 }
 
+// Show disclaimer for unofficial transcripts at the bottom.
+if (!$official) {
+    echo html_writer::div(
+        html_writer::tag('strong', get_string('unofficialdisclaimer', 'gradereport_transcript')),
+        'alert alert-warning text-center mt-4'
+    );
+}
+
 // Download buttons.
 echo html_writer::start_div('transcript-download-buttons mt-4 mb-4');
 
-// Unofficial transcript button.
-$unofficialurl = new moodle_url('/grade/report/transcript/generate_transcript.php', [
-    'programid' => $programid,
-    'userid' => $userid,
-    'official' => 0,
-    'action' => 'download',
-    'sesskey' => sesskey()
-]);
-echo html_writer::link(
-    $unofficialurl,
-    get_string('downloadunofficial', 'gradereport_transcript'),
-    ['class' => 'btn btn-secondary btn-lg mr-2']
-);
+// Check if unofficial transcripts are allowed.
+$allowunofficial = get_config('gradereport_transcript', 'allowunofficial');
+if ($allowunofficial === false) {
+    $allowunofficial = 1;  // Default enabled
+}
+
+// Unofficial transcript button (only if allowed).
+if ($allowunofficial) {
+    $unofficialurl = new moodle_url('/grade/report/transcript/generate_transcript.php', [
+        'programid' => $programid,
+        'userid' => $userid,
+        'official' => 0,
+        'action' => 'download',
+        'sesskey' => sesskey()
+    ]);
+    echo html_writer::link(
+        $unofficialurl,
+        get_string('downloadunofficial', 'gradereport_transcript'),
+        ['class' => 'btn btn-secondary btn-lg mr-2']
+    );
+}
 
 // Official transcript button (only for site admins and managers).
 if (is_siteadmin() || has_capability('gradereport/transcript:manage', context_system::instance())) {
