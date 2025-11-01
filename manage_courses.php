@@ -289,8 +289,7 @@ if ($programid) {
         echo html_writer::start_tag('form', [
             'method' => 'post',
             'action' => 'manage_courses.php',
-            'class' => 'add-mapping-form',
-            'id' => 'add-mapping-form'
+            'class' => 'add-mapping-form'
         ]);
 
         echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
@@ -863,33 +862,6 @@ if ($programid) {
                         });
                     }
                 });
-
-                // Add form validation on submit.
-                const addMappingForm = document.getElementById('add-mapping-form');
-                if (addMappingForm) {
-                    addMappingForm.addEventListener('submit', function(e) {
-                        const courseid = addCourseSelect.value;
-                        const mappingtype = addMappingTypeSelect.value;
-                        const categoryid = addCategorySelect.value;
-
-                        // Validate course selection.
-                        if (!courseid || courseid == '0') {
-                            alert('<?php echo get_string('error:courserequired', 'gradereport_transcript'); ?>');
-                            e.preventDefault();
-                            return false;
-                        }
-
-                        // Validate category selection when type is category.
-                        if (mappingtype === 'category' && (!categoryid || categoryid == '0')) {
-                            alert('<?php echo get_string('error:categoryrequiredformapping', 'gradereport_transcript'); ?>');
-                            e.preventDefault();
-                            return false;
-                        }
-
-                        // Allow form submission when validation passes.
-                        return true;
-                    });
-                }
             }
         })();
         <?php

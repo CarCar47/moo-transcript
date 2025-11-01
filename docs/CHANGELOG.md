@@ -13,9 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added composite unique index on (programid, courseid, mappingtype, categoryid)
   - Each category now appears as separate line on transcript with its own grade
   - Category fullname becomes the course code/title on transcript
-- **Form submission bug** - Fixed JavaScript validation preventing form submission (version 2025110106)
-  - Added explicit `return true;` at end of validation function
-  - Form now submits correctly when all validations pass
+- **Form submission bug** - Fixed by removing client-side JavaScript validation (version 2025110107)
+  - Removed form `id` attribute and JavaScript submit event listener
+  - Now uses server-side validation only (matches all other forms in plugin)
+  - Server-side validation already handles all error cases with proper redirects
 
 ### Changed
 - **Redesigned manage_courses.php UI**
@@ -29,8 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Technical Details
 - Database upgrade: Version 2025110102 migrates index structure
 - Grade fetching verified to work correctly with multiple category mappings from same course
-- JavaScript updated to handle category dropdown in Add Mapping form
-- JavaScript validation fixed to explicitly allow form submission when validation passes
+- JavaScript updated to handle category dropdown in Add Mapping form (AJAX only)
+- Client-side form validation removed to match Moodle plugin patterns
 - All code marked with `v1.0.33` comments for easy identification
 
 ## [1.0.32] - 2025-11-01 (BETA)
