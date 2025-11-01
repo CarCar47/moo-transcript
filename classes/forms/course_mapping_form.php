@@ -83,7 +83,8 @@ class course_mapping_form extends \moodleform {
             require_once($CFG->libdir . '/grade/grade_category.php');
 
             foreach ($courses as $course) {
-                $categories = grade_category::fetch_all(['courseid' => $course->id]);
+                // Use leading backslash to reference global namespace (grade_category is not namespaced).
+                $categories = \grade_category::fetch_all(['courseid' => $course->id]);
                 if ($categories) {
                     foreach ($categories as $category) {
                         // Skip the course-level category.

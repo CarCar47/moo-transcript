@@ -33,6 +33,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Matches pattern used in program_form.php and ajax_get_categories.php
   - Resolves "Failed opening required '/gradelib.php'" error
   - Follows official Moodle moodleform best practices
+- **Namespace error** - Fixed grade_category class reference (version 2025110114)
+  - Changed `grade_category::fetch_all()` to `\grade_category::fetch_all()`
+  - Leading backslash `\` references global namespace in PHP
+  - Required because form is in `gradereport_transcript\forms` namespace
+  - `grade_category` is legacy Moodle class (not namespaced)
+  - Resolves "Class 'gradereport_transcript\forms\grade_category' not found" error
 
 ### Changed
 - **Redesigned manage_courses.php UI**
