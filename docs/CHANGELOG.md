@@ -39,6 +39,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Required because form is in `gradereport_transcript\forms` namespace
   - `grade_category` is legacy Moodle class (not namespaced)
   - Resolves "Class 'gradereport_transcript\forms\grade_category' not found" error
+- **Transcript display errors for category mappings** - Fixed (version 2025110115)
+  - Category fullname now displays on transcript instead of course name
+  - Empty categories (no child grade items) now show "N/A" instead of "A"
+  - Added check for child grade items before fetching category grade
+  - Matches working course mapping pattern (line 395 check for gradeable activities)
+  - Prevents empty categories from incorrectly aggregating to 100%
 
 ### Changed
 - **Redesigned manage_courses.php UI**

@@ -247,6 +247,95 @@ class gradereport_transcript_generator {
     }
 
     /**
+     * v1.0.32: Get student grade for a gradebook category
+     *
+     * Fetches the aggregated grade for a gradebook category using Moodle's grade API.
+     * Each category has a corresponding grade_item with itemtype='category' that stores
+     * the aggregated grade for all assignments within that category.
+     *
+     * @param object $mapping Course mapping object with categoryid
+     * @param int $userid Student user ID
+     * @return object|null Grade data object or null if no grade found
+     */
+    protected function get_student_grade_from_category($mapping, $userid) {
+        global $CFG;
+
+        require_once($CFG->libdir . '/gradelib.php');
+        require_once($CFG->libdir . '/grade/grade_item.php');
+        require_once($CFG->libdir . '/grade/grade_grade.php');
+        require_once($CFG->libdir . '/grade/grade_category.php');
+
+        // v1.0.33: Check if category has any gradeable content (matches course pattern at line 395).
+        // This prevents empty categories from incorrectly aggregating to 100% ("A").
+        $category_obj = \grade_category::fetch(['id' => $mapping->categoryid]);
+        if (!$category_obj) {
+            return null; // Category not found.
+        }
+
+        // Get child grade items in this category.
+        $grade_items = $category_obj->get_children();
+        if (empty($grade_items)) {
+            return null; // No gradeable items in this category - return null to display as "N/A".
+        }
+
+        // Fetch the category's grade item.
+        $gradeitem = \grade_item::fetch([
+            'itemtype' => 'category',
+            'iteminstance' => $mapping->categoryid,
+            'courseid' => $mapping->courseid
+        ]);
+
+        if (!$gradeitem) {
+            return null; // Category grade item not found.
+        }
+
+        // Check if grade needs recalculation.
+        if ($gradeitem->needsupdate) {
+            grade_regrade_final_grades($mapping->courseid);
+            // Re-fetch after recalculation.
+            $gradeitem = grade_item::fetch([
+                'itemtype' => 'category',
+                'iteminstance' => $mapping->categoryid,
+                'courseid' => $mapping->courseid
+            ]);
+        }
+
+        // Fetch student's grade for this category.
+        $gradegrade = grade_grade::fetch([
+            'itemid' => $gradeitem->id,
+            'userid' => $userid
+        ]);
+
+        if (!$gradegrade || $gradegrade->finalgrade === null) {
+            return null; // No grade found for this student.
+        }
+
+        $gradevalue = $gradegrade->finalgrade;
+        $gradeletter = null;
+        $gradepercentage = null;
+
+        // Convert numeric grade to letter grade.
+        $gradeletter = grade_format_gradevalue(
+            $gradevalue,
+            $gradeitem,
+            true,
+            GRADE_DISPLAY_TYPE_LETTER
+        );
+
+        // Calculate percentage.
+        if ($gradeitem->grademax > 0) {
+            $gradepercentage = (($gradevalue - $gradeitem->grademin) /
+                               ($gradeitem->grademax - $gradeitem->grademin)) * 100;
+        }
+
+        return (object)[
+            'gradevalue' => $gradevalue,
+            'gradeletter' => $gradeletter,
+            'gradepercentage' => $gradepercentage,
+        ];
+    }
+
+    /**
      * Get student grades for all mapped courses
      *
      * Uses Moodle's official Gradebook API (grade_get_course_grade) to retrieve
@@ -255,6 +344,7 @@ class gradereport_transcript_generator {
      *
      * Now includes transfer credits FIRST, followed by institutional courses.
      * AACRAO v1.0.17: Excludes institutional courses replaced by transfer credits.
+     * v1.0.32: Supports both course-level and category-level grade fetching.
      *
      * @return array Array of course data with grades (transfer + institutional)
      */
@@ -296,56 +386,74 @@ class gradereport_transcript_generator {
                 $gradeletter = null;
                 $gradepercentage = null;
 
-                // Check if course has gradeable activities BEFORE fetching grade.
-                // This prevents empty courses from incorrectly aggregating to 100% ("A").
-                // Per Moodle best practices: only show grades for courses with actual gradeable content.
-                $gradable_activities = grade_get_gradable_activities($course->id);
+                // v1.0.32: Check mapping type and feature flag.
+                $categorymapping_enabled = get_config('gradereport_transcript', 'enablecategorymapping');
+                $mappingtype = $mapping->mappingtype ?? 'course'; // Default to 'course' for backward compatibility.
 
-                if (!empty($gradable_activities)) {
-                    // Course has gradeable content - proceed with grade fetching.
+                if ($categorymapping_enabled && $mappingtype === 'category' && !empty($mapping->categoryid)) {
+                    // NEW: Fetch grade from gradebook category.
+                    $gradedata = $this->get_student_grade_from_category($mapping, $this->userid);
 
-                    // Check if grade needs recalculation before fetching.
-                    $gradeitem = grade_item::fetch([
-                        'courseid' => $course->id,
-                        'itemtype' => 'course'
-                    ]);
-
-                    if ($gradeitem && $gradeitem->needsupdate) {
-                        // Force recalculation to ensure fresh, accurate grades.
-                        // This is critical for transcripts to show current grades.
-                        grade_regrade_final_grades($course->id);
+                    if ($gradedata) {
+                        $gradevalue = $gradedata->gradevalue;
+                        $gradeletter = $gradedata->gradeletter;
+                        $gradepercentage = $gradedata->gradepercentage;
                     }
+                    // If null, grade will display as "N/A" (no grade in category yet).
 
-                    // Use Moodle's official API to get course grade.
-                    // This handles all gradebook logic: overrides, hidden grades, aggregation, etc.
-                    $coursegrade = grade_get_course_grade($this->userid, $course->id);
+                } else {
+                    // EXISTING: Fetch grade from course (default behavior).
+                    // Check if course has gradeable activities BEFORE fetching grade.
+                    // This prevents empty courses from incorrectly aggregating to 100% ("A").
+                    // Per Moodle best practices: only show grades for courses with actual gradeable content.
+                    $gradable_activities = grade_get_gradable_activities($course->id);
 
-                    if ($coursegrade && isset($coursegrade->grade) && $coursegrade->grade !== null) {
-                        $gradevalue = $coursegrade->grade;
+                    if (!empty($gradable_activities)) {
+                        // Course has gradeable content - proceed with grade fetching.
 
-                        // Re-fetch grade item for letter formatting (after potential recalculation).
+                        // Check if grade needs recalculation before fetching.
                         $gradeitem = grade_item::fetch([
                             'courseid' => $course->id,
                             'itemtype' => 'course'
                         ]);
 
-                        if ($gradeitem) {
-                            // Get letter grade using Moodle's grade formatter.
-                            $gradeletter = grade_format_gradevalue(
-                                $gradevalue,
-                                $gradeitem,
-                                true,
-                                GRADE_DISPLAY_TYPE_LETTER
-                            );
+                        if ($gradeitem && $gradeitem->needsupdate) {
+                            // Force recalculation to ensure fresh, accurate grades.
+                            // This is critical for transcripts to show current grades.
+                            grade_regrade_final_grades($course->id);
+                        }
 
-                            // Calculate percentage.
-                            if ($gradeitem->grademax > 0) {
-                                $gradepercentage = ($gradevalue / $gradeitem->grademax) * 100;
+                        // Use Moodle's official API to get course grade.
+                        // This handles all gradebook logic: overrides, hidden grades, aggregation, etc.
+                        $coursegrade = grade_get_course_grade($this->userid, $course->id);
+
+                        if ($coursegrade && isset($coursegrade->grade) && $coursegrade->grade !== null) {
+                            $gradevalue = $coursegrade->grade;
+
+                            // Re-fetch grade item for letter formatting (after potential recalculation).
+                            $gradeitem = grade_item::fetch([
+                                'courseid' => $course->id,
+                                'itemtype' => 'course'
+                            ]);
+
+                            if ($gradeitem) {
+                                // Get letter grade using Moodle's grade formatter.
+                                $gradeletter = grade_format_gradevalue(
+                                    $gradevalue,
+                                    $gradeitem,
+                                    true,
+                                    GRADE_DISPLAY_TYPE_LETTER
+                                );
+
+                                // Calculate percentage.
+                                if ($gradeitem->grademax > 0) {
+                                    $gradepercentage = ($gradevalue / $gradeitem->grademax) * 100;
+                                }
                             }
                         }
                     }
+                    // If no gradeable activities, leave gradevalue/gradeletter/gradepercentage as NULL (displays as "N/A").
                 }
-                // If no gradeable activities, leave gradevalue/gradeletter/gradepercentage as NULL (displays as "N/A").
 
                 $coursedata[] = (object)[
                     'mapping' => $mapping,
@@ -830,7 +938,23 @@ class gradereport_transcript_generator {
             $hour3 = $mapping->clinicalhours ?? 0.0;
             $rowtotal = $hour1 + $hour2 + $hour3;
 
-            $coursename = htmlspecialchars($course->shortname . ' - ' . $course->fullname);
+            // v1.0.33: Use category fullname for category mappings, course name for course mappings.
+            $categorymapping_enabled = get_config('gradereport_transcript', 'enablecategorymapping');
+            if ($categorymapping_enabled &&
+                isset($mapping->mappingtype) &&
+                $mapping->mappingtype === 'category' &&
+                !empty($mapping->categoryid)) {
+                // Fetch category fullname.
+                $category = $DB->get_record('grade_categories',
+                    ['id' => $mapping->categoryid], 'id, fullname');
+                if ($category) {
+                    $coursename = htmlspecialchars($category->fullname);
+                } else {
+                    $coursename = htmlspecialchars($course->shortname . ' - ' . $course->fullname);
+                }
+            } else {
+                $coursename = htmlspecialchars($course->shortname . ' - ' . $course->fullname);
+            }
 
             $html .= '<tr>';
             $html .= '<td align="left">' . $coursename . '</td>';
