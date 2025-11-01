@@ -6,6 +6,8 @@
 *.sublime-*
 .phpintel/
 .phpstorm.meta.php
+.claude/
+.claude/settings.local.json
 
 # OS
 .DS_Store
