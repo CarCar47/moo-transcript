@@ -40,6 +40,8 @@ class course_mapping_form extends \moodleform {
      * Define the form
      */
     public function definition() {
+        global $CFG;
+
         $mform = $this->_form;
         $customdata = $this->_customdata;
 

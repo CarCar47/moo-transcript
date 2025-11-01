@@ -28,6 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Changed from `hideIf()` to `disabledIf()` for proper form submission
   - Removed AJAX dynamic population (not compatible with Moodle's validation)
   - Category options formatted as "CourseShortname - Category Name" for clarity
+- **Form loading error** - Fixed missing global $CFG declaration (version 2025110113)
+  - Added `global $CFG;` at start of definition() method
+  - Matches pattern used in program_form.php and ajax_get_categories.php
+  - Resolves "Failed opening required '/gradelib.php'" error
+  - Follows official Moodle moodleform best practices
 
 ### Changed
 - **Redesigned manage_courses.php UI**

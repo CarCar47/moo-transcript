@@ -24,8 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2025110112;               // The current plugin version (Date: YYYYMMDDXX).
+$plugin->version   = 2025110113;               // The current plugin version (Date: YYYYMMDDXX).
 $plugin->requires  = 2025092600;               // Requires Moodle 5.1.
 $plugin->component = 'gradereport_transcript'; // Full name of the plugin (used for diagnostics).
 $plugin->maturity  = MATURITY_BETA;            // v1.0.33: BETA - multiple category mappings per course.
-$plugin->release   = '1.0.33';                 // FIX: Category form validation now works - pre-load all options server-side per Moodle best practices.
+$plugin->release   = '1.0.33';                 // FIX: Added missing global $CFG declaration - form now loads without gradelib.php error.
