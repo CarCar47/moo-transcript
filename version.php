@@ -24,8 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2025110107;               // The current plugin version (Date: YYYYMMDDXX).
+$plugin->version   = 2025110109;               // The current plugin version (Date: YYYYMMDDXX).
 $plugin->requires  = 2025092600;               // Requires Moodle 5.1.
 $plugin->component = 'gradereport_transcript'; // Full name of the plugin (used for diagnostics).
 $plugin->maturity  = MATURITY_BETA;            // v1.0.33: BETA - multiple category mappings per course.
-$plugin->release   = '1.0.33';                 // FIX: Remove client-side JS validation, use server-side only (matches Moodle patterns).
+$plugin->release   = '1.0.33';                 // FIX: Use moodleform class instead of raw HTML (matches all other forms in plugin).

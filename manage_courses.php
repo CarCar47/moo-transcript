@@ -99,71 +99,7 @@ if ($action === 'save' && $programid) {
         \core\output\notification::NOTIFY_SUCCESS);
 }
 
-// v1.0.33: Handle add_mapping action (add single course or category mapping).
-if ($action === 'add_mapping' && $programid) {
-    require_sesskey();
-
-    $courseid = required_param('courseid', PARAM_INT);
-    $mappingtype = required_param('mappingtype', PARAM_ALPHA);
-    $categoryid = optional_param('categoryid', 0, PARAM_INT);
-
-    // Validate course selection.
-    if ($courseid === 0) {
-        redirect(new moodle_url('/grade/report/transcript/manage_courses.php', ['programid' => $programid]),
-            get_string('error:courserequired', 'gradereport_transcript'), null,
-            \core\output\notification::NOTIFY_ERROR);
-    }
-
-    // Validate mapping type.
-    if (!in_array($mappingtype, ['course', 'category'])) {
-        $mappingtype = 'course';
-    }
-
-    // Validate category selection when mapping type is category.
-    if ($mappingtype === 'category' && $categoryid === 0) {
-        redirect(new moodle_url('/grade/report/transcript/manage_courses.php', ['programid' => $programid]),
-            get_string('error:categoryrequiredformapping', 'gradereport_transcript'), null,
-            \core\output\notification::NOTIFY_ERROR);
-    }
-
-    // Check if mapping already exists.
-    $existing = $DB->get_record('gradereport_transcript_courses', [
-        'programid' => $programid,
-        'courseid' => $courseid,
-        'mappingtype' => $mappingtype,
-        'categoryid' => $categoryid
-    ]);
-
-    if (!$existing) {
-        // Get highest sortorder.
-        $maxsort = $DB->get_field_sql('SELECT MAX(sortorder) FROM {gradereport_transcript_courses} WHERE programid = ?', [$programid]);
-        $newsortorder = ($maxsort !== false) ? $maxsort + 1 : 1;
-
-        $record = new stdClass();
-        $record->programid = $programid;
-        $record->courseid = $courseid;
-        $record->mappingtype = $mappingtype;
-        $record->categoryid = $categoryid;
-        $record->sortorder = $newsortorder;
-        $record->theoryhours = 0;
-        $record->labhours = 0;
-        $record->clinicalhours = 0;
-        $record->credits = 0;
-        $record->ceuvalue = 0;
-        $record->timecreated = time();
-        $record->timemodified = time();
-
-        $DB->insert_record('gradereport_transcript_courses', $record);
-
-        redirect(new moodle_url('/grade/report/transcript/manage_courses.php', ['programid' => $programid]),
-            get_string('mappingadded', 'gradereport_transcript'), null,
-            \core\output\notification::NOTIFY_SUCCESS);
-    } else {
-        redirect(new moodle_url('/grade/report/transcript/manage_courses.php', ['programid' => $programid]),
-            get_string('mappingexists', 'gradereport_transcript'), null,
-            \core\output\notification::NOTIFY_WARNING);
-    }
-}
+// v1.0.33: Old add_mapping handler removed - now using moodleform (see line 211).
 
 // v1.0.33: Handle delete_mapping action.
 if ($action === 'delete_mapping') {
@@ -199,6 +135,66 @@ if ($action === 'delete_mapping') {
 
         echo $OUTPUT->footer();
         exit;
+    }
+}
+
+// Handle course mapping form submission (before page output).
+if ($programid) {
+    $program = $DB->get_record('gradereport_transcript_programs', ['id' => $programid], 'id, categoryid');
+    if ($program) {
+        $courses = $DB->get_records('course', ['category' => $program->categoryid], 'shortname ASC');
+        unset($courses[SITEID]);
+        $categorymapping_enabled = get_config('gradereport_transcript', 'enablecategorymapping');
+
+        if (!empty($courses)) {
+            $formurl = new moodle_url('/grade/report/transcript/manage_courses.php', ['programid' => $programid]);
+            $customdata = [
+                'programid' => $programid,
+                'courses' => $courses,
+                'categorymapping_enabled' => $categorymapping_enabled,
+            ];
+            $mappingform = new \gradereport_transcript\forms\course_mapping_form($formurl, $customdata);
+
+            // Form submitted.
+            $data = $mappingform->get_data();
+            if ($data) {
+                // Check if mapping already exists.
+                $existing = $DB->get_record('gradereport_transcript_courses', [
+                    'programid' => $data->programid,
+                    'courseid' => $data->courseid,
+                    'mappingtype' => $data->mappingtype,
+                    'categoryid' => isset($data->categoryid) ? $data->categoryid : 0,
+                ]);
+
+                if (!$existing) {
+                    // Get highest sortorder.
+                    $maxsort = $DB->get_field_sql('SELECT MAX(sortorder) FROM {gradereport_transcript_courses} WHERE programid = ?', [$data->programid]);
+                    $newsortorder = ($maxsort !== false) ? $maxsort + 1 : 1;
+
+                    $record = new stdClass();
+                    $record->programid = $data->programid;
+                    $record->courseid = $data->courseid;
+                    $record->mappingtype = $data->mappingtype;
+                    $record->categoryid = isset($data->categoryid) ? $data->categoryid : 0;
+                    $record->sortorder = $newsortorder;
+                    $record->theoryhours = 0;
+                    $record->labhours = 0;
+                    $record->clinicalhours = 0;
+                    $record->credits = 0;
+                    $record->ceuvalue = 0;
+                    $record->timecreated = time();
+                    $record->timemodified = time();
+
+                    $DB->insert_record('gradereport_transcript_courses', $record);
+
+                    redirect($formurl, get_string('mappingadded', 'gradereport_transcript'), null,
+                        \core\output\notification::NOTIFY_SUCCESS);
+                } else {
+                    redirect($formurl, get_string('mappingexists', 'gradereport_transcript'), null,
+                        \core\output\notification::NOTIFY_WARNING);
+                }
+            }
+        }
     }
 }
 
@@ -278,7 +274,7 @@ if ($programid) {
         }
     }
 
-    // v1.0.33: "Add New Mapping" form section.
+    // v1.0.33: "Add New Mapping" form section using moodleform.
     $categorymapping_enabled = get_config('gradereport_transcript', 'enablecategorymapping');
 
     if (!empty($courses)) {
@@ -286,66 +282,18 @@ if ($programid) {
         echo html_writer::start_div('card-body');
         echo html_writer::tag('h5', get_string('addmapping', 'gradereport_transcript'), ['class' => 'card-title']);
 
-        echo html_writer::start_tag('form', [
-            'method' => 'post',
-            'action' => 'manage_courses.php',
-            'class' => 'add-mapping-form'
-        ]);
+        // Create moodleform for adding mappings.
+        $formurl = new moodle_url('/grade/report/transcript/manage_courses.php', ['programid' => $programid]);
+        $customdata = [
+            'programid' => $programid,
+            'courses' => $courses,
+            'categorymapping_enabled' => $categorymapping_enabled,
+        ];
+        $mappingform = new \gradereport_transcript\forms\course_mapping_form($formurl, $customdata);
 
-        echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
-        echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'programid', 'value' => $programid]);
-        echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => 'add_mapping']);
+        // Display the form.
+        $mappingform->display();
 
-        echo html_writer::start_div('row g-3 align-items-end');
-
-        // Course selector.
-        echo html_writer::start_div('col-md-4');
-        echo html_writer::label(get_string('selectcourse', 'gradereport_transcript'), 'add-course-select', true, ['class' => 'form-label']);
-        $courseoptions = [];
-        foreach ($courses as $course) {
-            $courseoptions[$course->id] = format_string($course->shortname) . ' - ' . format_string($course->fullname);
-        }
-        echo html_writer::select($courseoptions, 'courseid', 0, [0 => get_string('selectcourse', 'gradereport_transcript')], ['id' => 'add-course-select', 'class' => 'form-select']);
-        echo html_writer::end_div();
-
-        // Mapping type selector (if enabled).
-        if ($categorymapping_enabled) {
-            echo html_writer::start_div('col-md-3');
-            echo html_writer::label(get_string('mappingtype', 'gradereport_transcript'), 'add-mapping-type', true, ['class' => 'form-label']);
-            $mappingoptions = [
-                'course' => get_string('mappingtype_course', 'gradereport_transcript'),
-                'category' => get_string('mappingtype_category', 'gradereport_transcript'),
-            ];
-            echo html_writer::select($mappingoptions, 'mappingtype', 'course', false, ['id' => 'add-mapping-type', 'class' => 'form-select']);
-            echo html_writer::end_div();
-
-            // Category selector (hidden by default).
-            echo html_writer::start_div('col-md-3');
-            echo html_writer::label(get_string('selectcategory', 'gradereport_transcript'), 'add-category-select', true, ['class' => 'form-label']);
-            echo html_writer::select(
-                [],
-                'categoryid',
-                0,
-                [0 => get_string('selectcategory', 'gradereport_transcript')],
-                ['id' => 'add-category-select', 'class' => 'form-select', 'style' => 'display:none;']
-            );
-            echo html_writer::end_div();
-        } else {
-            // Hidden field for mapping type if category mapping is disabled.
-            echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'mappingtype', 'value' => 'course']);
-        }
-
-        // Add button.
-        echo html_writer::start_div('col-md-2');
-        echo html_writer::empty_tag('input', [
-            'type' => 'submit',
-            'value' => get_string('addmappingbtn', 'gradereport_transcript'),
-            'class' => 'btn btn-success w-100',
-        ]);
-        echo html_writer::end_div();
-
-        echo html_writer::end_div(); // row
-        echo html_writer::end_tag('form');
         echo html_writer::end_div(); // card-body
         echo html_writer::end_div(); // card
     }
@@ -785,7 +733,7 @@ if ($programid) {
 
             // Function to populate category dropdown.
             function populateCategorySelect(categorySelect, categories, selectedId) {
-                categorySelect.innerHTML = '<option value="0"><?php echo get_string('selectcategory', 'gradereport_transcript'); ?></option>';
+                categorySelect.innerHTML = '<option value=""><?php echo get_string('selectcategory', 'gradereport_transcript'); ?></option>';
 
                 categories.forEach(function(cat) {
                     const option = document.createElement('option');
@@ -843,7 +791,7 @@ if ($programid) {
 
                         // Fetch categories for selected course.
                         const courseid = addCourseSelect.value;
-                        if (courseid && courseid != '0') {
+                        if (courseid && courseid !== '') {
                             fetchCategories(courseid, function(categories) {
                                 populateCategorySelect(addCategorySelect, categories, '');
                             });
@@ -856,7 +804,7 @@ if ($programid) {
                 // Handle course change in Add Mapping form.
                 addCourseSelect.addEventListener('change', function() {
                     const courseid = this.value;
-                    if (courseid && courseid != '0' && addMappingTypeSelect.value === 'category') {
+                    if (courseid && courseid !== '' && addMappingTypeSelect.value === 'category') {
                         fetchCategories(courseid, function(categories) {
                             populateCategorySelect(addCategorySelect, categories, '');
                         });
