@@ -22,6 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - JavaScript now correctly finds form elements: `id_courseid`, `id_mappingtype`, `id_categoryid`
   - AJAX category loading now works when course is selected and mapping type is "category"
   - Follows official Moodle Forms API documentation
+- **Category form validation failing** - Fixed by pre-loading all options server-side (version 2025110112)
+  - Per Moodle best practices: "For select elements, only data that could have been selected will be allowed"
+  - All gradebook categories from all program courses now loaded in form definition
+  - Changed from `hideIf()` to `disabledIf()` for proper form submission
+  - Removed AJAX dynamic population (not compatible with Moodle's validation)
+  - Category options formatted as "CourseShortname - Category Name" for clarity
 
 ### Changed
 - **Redesigned manage_courses.php UI**

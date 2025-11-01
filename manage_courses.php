@@ -768,37 +768,9 @@ if ($programid) {
                 }
             });
 
-            // v1.0.33: Add Mapping form - handle mapping type change.
-            // Use correct Moodle-generated IDs: moodleform uses id_{elementname} pattern.
-            const addMappingTypeSelect = document.getElementById('id_mappingtype');
-            const addCourseSelect = document.getElementById('id_courseid');
-            const addCategorySelect = document.getElementById('id_categoryid');
-
-            if (addMappingTypeSelect && addCourseSelect && addCategorySelect) {
-                // Handle mapping type change in Add Mapping form.
-                addMappingTypeSelect.addEventListener('change', function() {
-                    if (this.value === 'category') {
-                        // Moodle's hideIf handles visibility, but we need to populate options.
-                        // Fetch categories for selected course.
-                        const courseid = addCourseSelect.value;
-                        if (courseid && courseid !== '') {
-                            fetchCategories(courseid, function(categories) {
-                                populateCategorySelect(addCategorySelect, categories, '');
-                            });
-                        }
-                    }
-                });
-
-                // Handle course change in Add Mapping form.
-                addCourseSelect.addEventListener('change', function() {
-                    const courseid = this.value;
-                    if (courseid && courseid !== '' && addMappingTypeSelect.value === 'category') {
-                        fetchCategories(courseid, function(categories) {
-                            populateCategorySelect(addCategorySelect, categories, '');
-                        });
-                    }
-                });
-            }
+            // v1.0.33: Add Mapping form no longer needs AJAX population.
+            // All category options are now pre-loaded server-side per Moodle best practices.
+            // The disabledIf() handles enabling/disabling the category select based on mapping type.
         })();
         <?php
         echo html_writer::end_tag('script');

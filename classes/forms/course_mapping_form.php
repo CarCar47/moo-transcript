@@ -71,9 +71,32 @@ class course_mapping_form extends \moodleform {
             $mform->addElement('select', 'mappingtype', get_string('mappingtype', 'gradereport_transcript'), $mappingoptions);
             $mform->setDefault('mappingtype', 'course');
 
-            // Category selector (hidden by default, shown when mappingtype = category).
-            $mform->addElement('select', 'categoryid', get_string('selectcategory', 'gradereport_transcript'), []);
-            $mform->hideIf('categoryid', 'mappingtype', 'neq', 'category');
+            // v1.0.33: Category selector - pre-load ALL categories from ALL courses server-side.
+            // Per Moodle best practices: "For select elements, only data that could have been
+            // selected will be allowed" - options MUST be defined server-side for validation.
+            $categoryoptions = ['' => get_string('selectcategory', 'gradereport_transcript')];
+
+            // Get all grade categories for all courses in this program.
+            require_once($CFG->libdir . '/gradelib.php');
+            require_once($CFG->libdir . '/grade/grade_category.php');
+
+            foreach ($courses as $course) {
+                $categories = grade_category::fetch_all(['courseid' => $course->id]);
+                if ($categories) {
+                    foreach ($categories as $category) {
+                        // Skip the course-level category.
+                        if ($category->is_course_category()) {
+                            continue;
+                        }
+                        // Format: "CourseShortname - Category Name".
+                        $label = format_string($course->shortname) . ' - ' . format_string($category->fullname);
+                        $categoryoptions[$category->id] = $label;
+                    }
+                }
+            }
+
+            $mform->addElement('select', 'categoryid', get_string('selectcategory', 'gradereport_transcript'), $categoryoptions);
+            $mform->disabledIf('categoryid', 'mappingtype', 'neq', 'category');
         } else {
             // Hidden field if category mapping disabled.
             $mform->addElement('hidden', 'mappingtype', 'course');
