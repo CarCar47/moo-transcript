@@ -180,6 +180,11 @@ class gradereport_transcript_generator {
                 $columns .= ', clinicalhours';
             }
 
+            // v1.0.33: Add category mapping fields if they exist (version 2025110101).
+            if ($dbman->field_exists($table, new xmldb_field('mappingtype'))) {
+                $columns .= ', mappingtype, categoryid';
+            }
+
             $sql = "SELECT $columns
                       FROM {gradereport_transcript_courses}
                      WHERE programid = ?
@@ -191,6 +196,11 @@ class gradereport_transcript_generator {
             foreach ($mappings as $mapping) {
                 if (!property_exists($mapping, 'clinicalhours')) {
                     $mapping->clinicalhours = 0;
+                }
+                // v1.0.33: Add defaults for category mapping fields (version 2025110101).
+                if (!property_exists($mapping, 'mappingtype')) {
+                    $mapping->mappingtype = 'course';
+                    $mapping->categoryid = 0;
                 }
             }
 
@@ -267,15 +277,15 @@ class gradereport_transcript_generator {
 
         // v1.0.33: Check if category has any gradeable content (matches course pattern at line 395).
         // This prevents empty categories from incorrectly aggregating to 100% ("A").
-        $category_obj = \grade_category::fetch(['id' => $mapping->categoryid]);
-        if (!$category_obj) {
-            return null; // Category not found.
-        }
+        // FIX v2025110116: Check for actual activities (itemtype='mod'), not just category totals.
+        global $DB;
+        $count = $DB->count_records_select('grade_items',
+            'categoryid = :catid AND itemtype = :type',
+            ['catid' => $mapping->categoryid, 'type' => 'mod']
+        );
 
-        // Get child grade items in this category.
-        $grade_items = $category_obj->get_children();
-        if (empty($grade_items)) {
-            return null; // No gradeable items in this category - return null to display as "N/A".
+        if ($count == 0) {
+            return null; // No actual gradeable activities in this category - return null to display as "N/A".
         }
 
         // Fetch the category's grade item.
@@ -866,6 +876,8 @@ class gradereport_transcript_generator {
      * @param bool $official Whether this is official transcript
      */
     protected function add_hourbased_courses_table($pdf, $official = false) {
+        global $DB; // v1.0.33: Required for category name lookup in foreach loop below.
+
         // Add disclaimer for unofficial transcripts at top.
         if (!$official) {
             $pdf->SetFont('helvetica', 'BI', 10);

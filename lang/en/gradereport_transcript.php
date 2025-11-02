@@ -157,6 +157,8 @@ $string['error:phoneinvalid'] = 'Phone number contains invalid characters. Use o
 $string['error:programnameempty'] = 'Program name cannot be empty or contain only whitespace.';
 $string['error:schoolrequired'] = 'You must select a school.';
 $string['error:categoryrequired'] = 'You must select a Moodle category.';
+$string['error:courserequired'] = 'You must select a course.';
+$string['error:categoryrequiredformapping'] = 'You must select a gradebook category when using category mapping.';
 $string['error:invalidprogramtype'] = 'Invalid program type selected.';
 $string['error:negativevalue'] = 'Price cannot be negative.';
 $string['invalidschoolid'] = 'Invalid school ID provided.';
@@ -347,6 +349,28 @@ $string['transcriptlinkinreports_help'] = 'When enabled, a link to the transcrip
 $string['studentaccessdisabled'] = 'Student access to transcripts is currently disabled. Please contact your site administrator for assistance.';
 $string['unofficialaccessdisabled'] = 'Unofficial transcript access is currently disabled. Please contact your site administrator to request an official transcript.';
 $string['unofficialdisclaimer'] = 'These grades are not official nor final grades, and are subject to change.';
+
+// v1.0.32: Category mapping strings (experimental feature - versioned for easy removal).
+$string['enablecategorymapping'] = 'Enable gradebook category mapping (Experimental)';
+$string['enablecategorymapping_help'] = 'When enabled, program courses can be mapped to gradebook categories within a single Moodle course instead of separate courses. This is useful for short programs where all content is taught in one course but separated by categories. <strong>This is an experimental feature.</strong> Can be disabled here if issues occur.';
+$string['mappingtype'] = 'Mapping Type';
+$string['mappingtype_help'] = 'Choose how to map this program course:<br><strong>Moodle Course:</strong> Map to a separate Moodle course (traditional method).<br><strong>Gradebook Category:</strong> Map to a category within a Moodle course (useful for short programs).';
+$string['mappingtype_course'] = 'Moodle Course';
+$string['mappingtype_category'] = 'Gradebook Category';
+$string['selectcategory'] = 'Select Gradebook Category';
+$string['selectcategory_help'] = 'Select the gradebook category that represents this program course. The student\'s grade for this category will appear on the transcript.';
+$string['nocategoriesfound'] = 'No gradebook categories found for this course. Please create categories in the gradebook first.';
+
+// v1.0.33: Multiple category mappings UI strings.
+$string['addmapping'] = 'Add New Mapping';
+$string['addmappingbtn'] = 'Add Mapping';
+$string['mappingadded'] = 'Mapping added successfully';
+$string['mappingexists'] = 'This mapping already exists';
+$string['deletemapping'] = 'Delete Mapping';
+$string['confirmdeletemapping'] = 'Are you sure you want to delete this mapping? This action cannot be undone.';
+$string['mappingdeleted'] = 'Mapping deleted successfully';
+$string['nomappings'] = 'No course mappings have been added yet. Use the form above to add your first mapping.';
+$string['selectcourse'] = 'Select Course';
 
 // Admin student transcript viewer strings.
 $string['viewstudenttranscripts'] = 'View Student Transcripts';

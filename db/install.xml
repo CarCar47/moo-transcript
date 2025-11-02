@@ -59,6 +59,8 @@
         <FIELD NAME="clinicalhours" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="false" SEQUENCE="false" DEFAULT="0" COMMENT="Clinical hours for hour-based programs"/>
         <FIELD NAME="credits" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="false" SEQUENCE="false" DEFAULT="0" COMMENT="Credits for credit-based programs"/>
         <FIELD NAME="ceuvalue" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="false" SEQUENCE="false" DEFAULT="0" COMMENT="CEU value"/>
+        <FIELD NAME="mappingtype" TYPE="char" LENGTH="10" NOTNULL="true" SEQUENCE="false" DEFAULT="course" COMMENT="v1.0.32: Mapping type - 'course' or 'category'"/>
+        <FIELD NAME="categoryid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" DEFAULT="0" COMMENT="v1.0.32: Gradebook category ID when mappingtype='category'"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
       </FIELDS>
@@ -68,7 +70,8 @@
       </KEYS>
       <INDEXES>
         <INDEX NAME="courseid" UNIQUE="false" FIELDS="courseid"/>
-        <INDEX NAME="programcourse" UNIQUE="true" FIELDS="programid, courseid"/>
+        <INDEX NAME="programid_idx" UNIQUE="false" FIELDS="programid"/>
+        <INDEX NAME="prog_course_map_cat" UNIQUE="true" FIELDS="programid, courseid, mappingtype, categoryid" COMMENT="v1.0.33: Allows multiple categories per course"/>
       </INDEXES>
     </TABLE>
 

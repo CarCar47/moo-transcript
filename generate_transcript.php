@@ -255,8 +255,26 @@ try {
             $mapping = $coursedata->mapping;
             $course = $coursedata->course;
 
+            // v1.0.33: Use category fullname for category mappings, course name for course mappings.
+            $categorymapping_enabled = get_config('gradereport_transcript', 'enablecategorymapping');
+            if ($categorymapping_enabled &&
+                isset($mapping->mappingtype) &&
+                $mapping->mappingtype === 'category' &&
+                !empty($mapping->categoryid)) {
+                // Fetch category fullname.
+                $category = $DB->get_record('grade_categories',
+                    ['id' => $mapping->categoryid], 'id, fullname');
+                if ($category) {
+                    $coursename = $category->fullname;
+                } else {
+                    $coursename = $course->shortname . ' - ' . $course->fullname;
+                }
+            } else {
+                $coursename = $course->shortname . ' - ' . $course->fullname;
+            }
+
             echo html_writer::start_tag('tr');
-            echo html_writer::tag('td', $course->shortname . ' - ' . $course->fullname);
+            echo html_writer::tag('td', $coursename);
             echo html_writer::tag('td', $coursedata->gradeletter ?? 'N/A', ['class' => 'text-center']);
 
             if ($program->type === 'hourbased') {

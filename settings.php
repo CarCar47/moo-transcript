@@ -52,6 +52,14 @@ if ($hassiteconfig) {
         1  // Default: enabled
     ));
 
+    // v1.0.32: Enable gradebook category mapping (experimental feature - versioned for easy removal).
+    $settingspage->add(new admin_setting_configcheckbox(
+        'gradereport_transcript/enablecategorymapping',
+        get_string('enablecategorymapping', 'gradereport_transcript'),
+        get_string('enablecategorymapping_help', 'gradereport_transcript'),
+        0  // Default: DISABLED (experimental)
+    ));
+
     $settingspage->add(new admin_setting_configcheckbox(
         'gradereport_transcript/showinreports',
         get_string('transcriptlinkinreports', 'gradereport_transcript'),

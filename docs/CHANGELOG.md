@@ -39,10 +39,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Required because form is in `gradereport_transcript\forms` namespace
   - `grade_category` is legacy Moodle class (not namespaced)
   - Resolves "Class 'gradereport_transcript\forms\grade_category' not found" error
-- **Transcript display errors for category mappings** - Fixed (version 2025110115)
-  - Category fullname now displays on transcript instead of course name
-  - Empty categories (no child grade items) now show "N/A" instead of "A"
-  - Added check for child grade items before fetching category grade
+- **Transcript display errors for category mappings** - Fixed (version 2025110115-2025110118)
+  - **ROOT CAUSE** (version 2025110118) - `get_course_mappings()` method was NOT retrieving `mappingtype` and `categoryid` fields from database
+    - SQL query at line 177 only selected old fields, missing the new category mapping fields added in v1.0.32
+    - Added conditional field detection for `mappingtype` and `categoryid` (lines 183-186)
+    - Added defensive defaults for backward compatibility (lines 200-204)
+    - This fix makes all the other fixes (lines 2025110116-2025110117) actually work
+  - **Category names not displaying in PDF** (version 2025110116) - Added missing `global $DB;` declaration in `add_hourbased_courses_table()` method
+    - Without global declaration, `$DB->get_record()` call for category names failed silently
+    - Now category fullname displays correctly on PDF transcripts instead of course name
+  - **Category names not displaying in HTML view** (version 2025110117) - Added category name logic to `generate_transcript.php` line 258-274
+    - HTML view was hardcoded to show `$course->shortname . ' - ' . $course->fullname` without checking mappingtype
+    - Added same category detection logic as PDF generator
+    - Now category fullname displays correctly in HTML view, unofficial PDF, and official PDF
+  - **Empty categories showing "A" grade** (version 2025110116) - Fixed by checking for actual activities (itemtype='mod')
+    - Previous `get_children()` approach returned category total items, making empty categories appear non-empty
+    - Now uses `$DB->count_records_select()` to check specifically for gradeable activities (quiz, assignment, etc.)
+    - Empty categories (no mod items) now correctly show "N/A" instead of "A"
   - Matches working course mapping pattern (line 395 check for gradeable activities)
   - Prevents empty categories from incorrectly aggregating to 100%
 

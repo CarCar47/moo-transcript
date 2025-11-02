@@ -481,6 +481,58 @@ function xmldb_gradereport_transcript_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2025102522, 'gradereport', 'transcript');
     }
 
+    // v1.0.32: Add gradebook category mapping support (experimental, versioned for easy removal).
+    if ($oldversion < 2025110101) {
+        // Define table gradereport_transcript_courses to be updated.
+        $table = new xmldb_table('gradereport_transcript_courses');
+
+        // Add mappingtype field (course or category).
+        $field = new xmldb_field('mappingtype', XMLDB_TYPE_CHAR, '10', null, XMLDB_NOTNULL, null, 'course', 'ceuvalue');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Add categoryid field (stores grade_categories.id when mappingtype='category').
+        $field = new xmldb_field('categoryid', XMLDB_TYPE_INTEGER, '10', null, null, null, 0, 'mappingtype');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Set all existing records to mappingtype='course' for backward compatibility.
+        $DB->execute("UPDATE {gradereport_transcript_courses} SET mappingtype = 'course' WHERE mappingtype IS NULL OR mappingtype = ''");
+
+        // Transcript savepoint reached.
+        upgrade_plugin_savepoint(true, 2025110101, 'gradereport', 'transcript');
+    }
+
+    // v1.0.33: Allow multiple category mappings per course (remove unique constraint).
+    if ($oldversion < 2025110102) {
+        $table = new xmldb_table('gradereport_transcript_courses');
+
+        // Drop old unique index on (programid, courseid).
+        $index = new xmldb_index('programcourse', XMLDB_INDEX_UNIQUE, ['programid', 'courseid']);
+        if ($dbman->index_exists($table, $index)) {
+            $dbman->drop_index($table, $index);
+        }
+
+        // Add non-unique index on programid for query performance.
+        $index = new xmldb_index('programid_idx', XMLDB_INDEX_NOTUNIQUE, ['programid']);
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Add composite unique index to prevent duplicate mappings.
+        // This allows multiple categories from same course.
+        $index = new xmldb_index('prog_course_map_cat', XMLDB_INDEX_UNIQUE,
+            ['programid', 'courseid', 'mappingtype', 'categoryid']);
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Transcript savepoint reached.
+        upgrade_plugin_savepoint(true, 2025110102, 'gradereport', 'transcript');
+    }
+
     return true;
 }
 
