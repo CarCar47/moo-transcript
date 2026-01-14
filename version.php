@@ -24,8 +24,9 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2025110118;               // The current plugin version (Date: YYYYMMDDXX).
-$plugin->requires  = 2025092600;               // Requires Moodle 5.1.
+$plugin->version   = 2025011400;               // The current plugin version (Date: YYYYMMDDXX).
+$plugin->requires  = 2024042200;               // Requires Moodle 4.4 minimum.
+$plugin->supported = [404, 501];               // Supports Moodle 4.4 through 5.1.
 $plugin->component = 'gradereport_transcript'; // Full name of the plugin (used for diagnostics).
-$plugin->maturity  = MATURITY_BETA;            // v1.0.33: BETA - multiple category mappings per course.
-$plugin->release   = '1.0.33';                 // FIX: get_course_mappings() now retrieves mappingtype and categoryid fields.
+$plugin->maturity  = MATURITY_BETA;
+$plugin->release   = '1.0.34';                 // Multi-version support: Moodle 4.4, 4.5, 5.0, 5.1.

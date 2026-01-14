@@ -5,6 +5,20 @@ All notable changes to the Academic Transcripts & CEU Certificates plugin will b
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.34] - 2025-01-14
+
+### Changed
+- **Multi-version Moodle support** - Lowered minimum Moodle requirement from 5.1 to 4.4
+  - Changed `$plugin->requires` from `2025092600` to `2024042200`
+  - Added `$plugin->supported = [404, 501]` to explicitly declare compatible versions
+  - Allows installation on Moodle 4.4, 4.5 LTS, 5.0, and 5.1
+
+### Compatibility
+- Moodle 4.4 (2024042200) - Minimum supported
+- Moodle 4.5 LTS (2024100700) - Long-term support
+- Moodle 5.0 (2024110400) - Current release
+- Moodle 5.1 (2025092600) - Latest supported
+
 ## [1.0.33] - 2025-11-01 (BETA)
 
 ### Fixed
