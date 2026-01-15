@@ -50,7 +50,8 @@ function extract_course_code_from_category($fullname) {
 admin_externalpage_setup('gradereporttranscriptcourses');
 
 $programid = optional_param('programid', 0, PARAM_INT);
-$action = optional_param('action', '', PARAM_ALPHA);
+// v1.0.36: Changed PARAM_ALPHA to PARAM_ALPHAEXT to allow underscores in action names (e.g., delete_mapping).
+$action = optional_param('action', '', PARAM_ALPHAEXT);
 
 $PAGE->set_url(new moodle_url('/grade/report/transcript/manage_courses.php', ['programid' => $programid]));
 $PAGE->set_title(get_string('managecourses', 'gradereport_transcript'));
@@ -507,6 +508,7 @@ if ($programid) {
             }
 
             // v1.0.33: Add DELETE button.
+            // v1.0.35: Added onclick to prevent form interference - link inside form was not navigating.
             $deleteurl = new moodle_url('/grade/report/transcript/manage_courses.php', [
                 'programid' => $programid,
                 'action' => 'delete_mapping',
@@ -515,7 +517,8 @@ if ($programid) {
             ]);
             $row[] = html_writer::link($deleteurl, get_string('delete'), [
                 'class' => 'btn btn-sm btn-danger',
-                'title' => get_string('deletemapping', 'gradereport_transcript')
+                'title' => get_string('deletemapping', 'gradereport_transcript'),
+                'onclick' => 'window.location.href=this.href; return false;'
             ]);
 
             $table->data[] = $row;

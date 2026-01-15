@@ -1410,25 +1410,10 @@ class gradereport_transcript_generator {
     protected function add_academic_info_page($pdf) {
         global $DB;
 
-        // Smart pagination: Only add new page if academic info won't fit on current page.
-        // Estimate minimum space needed for academic information sections:
-        // - Page heading: ~15mm
-        // - Grading scale table: ~45mm (varies by school, avg 8 grades)
-        // - GPA calculation: ~15mm (credit-based only)
-        // - Symbols table: ~30mm (varies by school, avg 6 symbols)
-        // - Course numbering policy: ~15mm
-        // - Transfer credit policy: ~15mm
-        // - Verification section: ~20mm
-        // Total estimated: ~155mm (conservative for longest case)
-        // Minimum for partial content: ~80mm
-        $minimumSpaceNeeded = 80;  // If less than 80mm, start fresh page
-
-        $newPageAdded = $this->ensure_minimum_space($pdf, $minimumSpaceNeeded);
-
-        if (!$newPageAdded) {
-            // Staying on current page - add visual separator
-            $pdf->Ln(10);
-        }
+        // v1.0.38: Official transcripts - Always start Academic Information on page 2 (back side)
+        // This function is only called for official transcripts (see generate_*_content methods)
+        // For print-ready transcripts: Page 1 = front (grades), Page 2 = back (academic info)
+        $pdf->AddPage();
 
         // Page heading
         $pdf->SetFont('helvetica', 'B', 12);
@@ -1472,12 +1457,18 @@ class gradereport_transcript_generator {
         } else {
             // Use custom grading scale from database.
             foreach ($gradescale as $row) {
-                $percentagerange = number_format($row->minpercentage, 0) . '-' . number_format($row->maxpercentage, 0) . '%';
+                // v1.0.36: Handle NULL values for grades excluded from GPA (I, W, WF, etc.).
+                $percentagerange = ($row->minpercentage !== null && $row->maxpercentage !== null)
+                    ? number_format($row->minpercentage, 0) . '-' . number_format($row->maxpercentage, 0) . '%'
+                    : 'N/A';
+                $gradepoints = ($row->gradepoints !== null)
+                    ? number_format($row->gradepoints, 1)
+                    : 'N/A';
 
                 $html .= '<tr>';
                 $html .= '<td align="center">' . htmlspecialchars($row->lettergrade) . '</td>';
                 $html .= '<td align="center">' . $percentagerange . '</td>';
-                $html .= '<td align="center">' . number_format($row->gradepoints, 1) . '</td>';
+                $html .= '<td align="center">' . $gradepoints . '</td>';
                 $html .= '<td align="center">' . htmlspecialchars($row->quality) . '</td>';
                 $html .= '</tr>';
             }

@@ -122,6 +122,14 @@ if ($action === 'add' || $action === 'edit') {
     if ($data) {
         $data->timemodified = time();
 
+        // Handle "Exclude from GPA" - set numeric fields to NULL per AACRAO standards.
+        // Grades like I, W, WF should not have percentage ranges or grade points.
+        if (!empty($data->excludefromgpa)) {
+            $data->minpercentage = null;
+            $data->maxpercentage = null;
+            $data->gradepoints = null;
+        }
+
         if ($action === 'edit' && $scaleid) {
             // Update existing grade scale.
             $data->id = $scaleid;
@@ -250,10 +258,18 @@ if (empty($scales)) {
         $actions = html_writer::link($editurl, get_string('edit')) . ' | ' .
                    html_writer::link($deleteurl, get_string('delete'));
 
+        // Handle NULL values for excluded-from-GPA grades (I, W, WF, etc.).
+        $percentagerange = ($scale->minpercentage !== null && $scale->maxpercentage !== null)
+            ? number_format($scale->minpercentage, 0) . '-' . number_format($scale->maxpercentage, 0) . '%'
+            : 'N/A';
+        $gradepoints = ($scale->gradepoints !== null)
+            ? number_format($scale->gradepoints, 1)
+            : 'N/A';
+
         $table->data[] = [
             s($scale->lettergrade),
-            number_format($scale->minpercentage, 0) . '-' . number_format($scale->maxpercentage, 0) . '%',
-            number_format($scale->gradepoints, 1),
+            $percentagerange,
+            $gradepoints,
             s($scale->quality),
             $scale->sortorder,
             $actions,

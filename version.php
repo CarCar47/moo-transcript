@@ -24,9 +24,9 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2025011400;               // The current plugin version (Date: YYYYMMDDXX).
+$plugin->version   = 2025110105;               // The current plugin version (Date: YYYYMMDDXX).
 $plugin->requires  = 2024042200;               // Requires Moodle 4.4 minimum.
 $plugin->supported = [404, 501];               // Supports Moodle 4.4 through 5.1.
 $plugin->component = 'gradereport_transcript'; // Full name of the plugin (used for diagnostics).
 $plugin->maturity  = MATURITY_BETA;
-$plugin->release   = '1.0.34';                 // Multi-version support: Moodle 4.4, 4.5, 5.0, 5.1.
+$plugin->release   = '1.0.38';                 // Fix: Academic Info always on page 2 for official transcripts.
